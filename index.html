@@ -488,13 +488,13 @@
     </section>
 
     <section id="social-tab" class="tab-content">
-        <h2>EJU 일본 사회 퀴즈</h2>
+        <h2>EJU 퀴즈</h2>
         <p class="quiz-note">EJU 수준의 자료 해석형 문제를 영역별 50문항씩, 총 200문항 제공합니다. 영역별로 풀거나 전체 영역을 섞어 풀 수 있으며, 정답 해설과 출처 링크도 확인할 수 있어요.</p>
         <div class="control-group">
             <label for="socialMode">문제 주제</label>
             <select id="socialMode" class="level-select"><option value="ALL">전체 영역</option><option value="SOCIAL">사회 퀴즈</option><option value="GEOGRAPHY">지리 퀴즈</option><option value="POLITICS">정치 퀴즈</option><option value="CULTURE">문화 퀴즈</option></select>
         </div>
-        <button class="btn" type="button" onclick="startSocialQuiz()">사회 퀴즈 시작</button>
+        <button class="btn" type="button" onclick="startSocialQuiz()">EJU 퀴즈 시작</button>
         <div id="socialPanel" class="quiz-panel" hidden>
             <div id="socialProgress" class="quiz-progress"></div>
             <div class="quiz-question-card"><div id="socialQuestion" class="quiz-question"></div><div id="socialOptions" class="quiz-options"></div><div id="socialFeedback" class="quiz-feedback" role="status"></div></div>
@@ -1337,10 +1337,10 @@
         const feedback = document.getElementById('socialFeedback');
         const next = document.getElementById('socialNext');
         if (socialIndex >= socialDeck.length) {
-            question.textContent = '사회 퀴즈 완료!';
+            question.textContent = 'EJU 퀴즈 완료!';
             optionsBox.replaceChildren();
             feedback.textContent = `${socialDeck.length}문제 중 ${socialScore}문제 정답 · 정답률 ${Math.round(socialScore / socialDeck.length * 100)}%`;
-            document.getElementById('socialProgress').textContent = '이번 사회 퀴즈 결과';
+            document.getElementById('socialProgress').textContent = '이번 EJU 퀴즈 결과';
             next.hidden = true;
             return;
         }

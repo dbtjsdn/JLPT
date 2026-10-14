@@ -1178,7 +1178,7 @@
             ]),
             [],
             ['전체 학습 진도 (SRS)'],
-            ['유형', '분류', '단어·표현·문항', '뜻·분류', '예상 JLPT', 'SRS level', 'intervalDays', 'nextReview'],
+            ['유형', '분류', '단어·표현·문항', '뜻·분류', 'JLPT', 'SRS level', 'intervalDays', 'nextReview'],
             ...allWords.map(item => {
                 const status = getSrsStatus('vocab', item);
                 return ['어휘', item.level, item.word, item.sub, item.jlptEstimate || '', status.srsLevel, status.intervalDays, status.nextReview];
@@ -1275,7 +1275,7 @@
         const levelLabels = { BASIC: '필수', KANJI: '한자', POLITICS: '정치', DISASTER: '재난' };
         levelBadge.innerText = levelLabels[currentItem.level] || currentItem.level;
         renderWord(wordDisplay, currentItem);
-        subDisplay.innerText = currentItem.jlptEstimate ? `${currentItem.sub} · 예상 JLPT ${currentItem.jlptEstimate}` : currentItem.sub;
+        subDisplay.innerText = currentItem.jlptEstimate ? `${currentItem.sub} · JLPT ${currentItem.jlptEstimate}` : currentItem.sub;
         readingDisplay.innerText = furiganaEnabled && currentItem.reading ? `읽기: ${currentItem.reading}` : "";
         srsStatusDisplay.textContent = formatSrsStatus('vocab', currentItem);
         cardHint.innerText = entry.kind === 'retry' ? '오늘 다시 복습하는 카드 · 뜻을 확인하세요' : '터치해서 뜻 확인하기';
@@ -1620,7 +1620,7 @@
             renderWord(word, item);
             const meaning = document.createElement('div');
             meaning.className = 'vocab-item-meaning';
-            meaning.textContent = item.sub + (item.reading ? ` · 읽기: ${item.reading}` : '');
+            meaning.textContent = item.sub + (item.reading ? ` · 읽기: ${item.reading}` : '') + (item.jlptEstimate ? ` · JLPT ${item.jlptEstimate}` : '');
             main.append(word, meaning);
             const badge = document.createElement('span');
             badge.className = 'vocab-item-level';
@@ -1934,7 +1934,7 @@
             renderWord(word, item);
             const meaning = document.createElement('div');
             meaning.className = 'dict-result-meaning';
-            meaning.textContent = item.sub + (item.reading ? ` · 읽기: ${item.reading}` : '');
+            meaning.textContent = item.sub + (item.reading ? ` · 읽기: ${item.reading}` : '') + (item.jlptEstimate ? ` · JLPT ${item.jlptEstimate}` : '');
             const level = document.createElement('div');
             level.className = 'dict-result-level';
             level.textContent = levelLabel(item.level);

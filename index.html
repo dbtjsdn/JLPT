@@ -328,8 +328,8 @@
         .pdf-actions { display: flex; gap: 8px; padding: 8px; }
         .pdf-actions button { flex: 1; }
     
-        .nav-tabs { display: flex; gap: 4px; margin: 4px 0 18px; padding: 4px; overflow-x: auto; background: #f1f5f9; border-radius: 12px; }
-        .nav-tab { flex: 1; min-width: 48px; padding: 9px 5px; border: 0; border-radius: 8px; background: transparent; color: #64748b; font-size: 12px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+        .nav-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 4px 0 18px; padding: 4px; background: #f1f5f9; border-radius: 12px; }
+        .nav-tab { min-width: 0; width: 100%; padding: 9px 5px; border: 0; border-radius: 8px; background: transparent; color: #64748b; font-size: 12px; font-weight: 700; white-space: nowrap; cursor: pointer; }
         .nav-tab.active { background: #fff; color: #4f46e5; box-shadow: 0 2px 5px rgba(0,0,0,.06); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -382,8 +382,30 @@
         .pdf-preview-row input[type="checkbox"] { justify-self: center; }
         .pdf-actions { display: flex; gap: 8px; padding: 8px; }
         .pdf-actions button { flex: 1; }
-        @media (max-width: 420px) { .nav-tab { min-width: 45px; font-size: 11px; } .quiz-question { font-size: 19px; } .input-row { flex-wrap: wrap; } }
+        @media (max-width: 420px) { .nav-tab { font-size: 11px; } .quiz-question { font-size: 19px; } .input-row { flex-wrap: wrap; } }
 
+
+        .history-summary { display:grid; grid-template-columns:repeat(3, 1fr); gap:7px; margin:12px 0; }
+        .history-stat { padding:10px 6px; border:1px solid #e2e8f0; border-radius:10px; background:#f8fafc; text-align:center; }
+        .history-stat strong { display:block; color:#4f46e5; font-size:18px; }
+        .history-stat span { display:block; margin-top:3px; color:#64748b; font-size:10px; }
+        .history-month { margin:14px 0 8px; color:#334155; font-size:13px; font-weight:750; }
+        .history-calendar { display:grid; grid-template-columns:repeat(10, 1fr); gap:4px; }
+        .history-day { min-height:35px; padding:4px 1px; border:1px solid #e2e8f0; border-radius:6px; background:#f8fafc; color:#64748b; font-size:9px; text-align:center; }
+        .history-day strong { display:block; color:#334155; font-size:11px; }
+        .history-day.level-1 { background:#ede9fe; border-color:#ddd6fe; }
+        .history-day.level-2 { background:#c4b5fd; border-color:#a78bfa; color:#312e81; }
+        .history-day.level-3 { background:#8b5cf6; border-color:#7c3aed; color:#fff; }
+        .history-day.level-4 { background:#4f46e5; border-color:#4338ca; color:#fff; }
+        .history-list { display:flex; flex-direction:column; gap:7px; margin-top:10px; max-height:280px; overflow-y:auto; }
+        .history-row { display:flex; justify-content:space-between; gap:8px; padding:9px 10px; border:1px solid #e2e8f0; border-radius:9px; background:#fff; font-size:12px; }
+        .history-row-main { min-width:0; }
+        .history-row-title { color:#1e293b; font-weight:700; }
+        .history-row-meta { margin-top:3px; color:#64748b; font-size:11px; }
+        .history-row-score { flex:0 0 auto; color:#4f46e5; font-weight:750; }
+        .history-empty { padding:18px 8px; color:#64748b; font-size:12px; text-align:center; }
+        .history-actions { display:flex; gap:8px; margin-top:10px; }
+        .history-actions .btn { margin-top:0; }
 
         .grammar-mode-tabs { display:flex; gap:8px; margin:12px 0; }
         .grammar-mode-tab { flex:1; padding:10px 8px; border:1px solid #e2e8f0; border-radius:9px; background:#f8fafc; color:#475569; font-size:13px; font-weight:700; cursor:pointer; }
@@ -425,6 +447,7 @@
         <button class="nav-tab" type="button" onclick="switchTab('grammar', this)">문법</button>
         <button class="nav-tab" type="button" onclick="switchTab('social', this)">EJU</button>
         <button class="nav-tab" type="button" onclick="switchTab('dict', this)">사전</button>
+        <button class="nav-tab" type="button" onclick="switchTab('history', this)">기록</button>
     </div>
 
     <section id="flashcard-tab" class="tab-content active">
@@ -583,6 +606,23 @@
             <div id="socialProgress" class="quiz-progress"></div>
             <div class="quiz-question-card"><div id="socialQuestion" class="quiz-question"></div><div id="socialOptions" class="quiz-options"></div><div id="socialFeedback" class="quiz-feedback" role="status"></div></div>
             <button id="socialNext" class="btn quiz-next" type="button" onclick="nextSocialQuestion()" hidden>다음 문제</button>
+        </div>
+    </section>
+
+    <section id="history-tab" class="tab-content">
+        <h2>학습 기록</h2>
+        <p class="quiz-note">최근 60일(약 2개월)의 학습 결과를 이 브라우저에 자동 저장합니다. 기기나 브라우저를 바꾸면 기록도 별도로 관리됩니다.</p>
+        <div class="history-summary">
+            <div class="history-stat"><strong id="historyTotal">0</strong><span>총 학습</span></div>
+            <div class="history-stat"><strong id="historyAccuracy">0%</strong><span>정답률</span></div>
+            <div class="history-stat"><strong id="historyActiveDays">0</strong><span>학습한 날</span></div>
+        </div>
+        <div id="historyCalendar"></div>
+        <h3 class="history-month">최근 학습 활동</h3>
+        <div id="historyList" class="history-list"></div>
+        <div class="history-actions">
+            <button class="btn" type="button" onclick="exportStudyHistory()">기록 CSV 저장</button>
+            <button class="btn" type="button" onclick="clearStudyHistory()" style="background:#64748b;">기록 초기화</button>
         </div>
     </section>
 
@@ -804,8 +844,157 @@
         srsProgress[srsKey(type, item)] = status;
         Object.assign(item, { srsLevel, intervalDays, nextReview });
         saveSrsProgress();
+        recordStudyHistory(type, item, remembered);
         if (type === 'vocab' && typeof allWords !== 'undefined') saveStorage();
         return status;
+    }
+
+    const STUDY_HISTORY_KEY = 'jlpt_study_history_v1';
+    const STUDY_HISTORY_DAYS = 60;
+
+    function loadStudyHistory() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(STUDY_HISTORY_KEY) || '[]');
+            return Array.isArray(saved) ? saved.filter(row => row && row.at && row.type) : [];
+        } catch (error) {
+            console.warn('학습 기록을 읽지 못했습니다.', error);
+            return [];
+        }
+    }
+
+    let studyHistory = loadStudyHistory();
+
+    function pruneStudyHistory() {
+        const cutoff = Date.now() - STUDY_HISTORY_DAYS * 24 * 60 * 60 * 1000;
+        studyHistory = studyHistory.filter(row => Date.parse(row.at) >= cutoff);
+    }
+
+    function saveStudyHistory() {
+        pruneStudyHistory();
+        try {
+            localStorage.setItem(STUDY_HISTORY_KEY, JSON.stringify(studyHistory));
+            return true;
+        } catch (error) {
+            console.warn('학습 기록을 저장하지 못했습니다.', error);
+            return false;
+        }
+    }
+
+    function studyHistoryLabel(type, item) {
+        if (type === 'grammar') return '문법';
+        if (type === 'eju') return item.category || 'EJU';
+        return levelLabel(item.level || 'ALL');
+    }
+
+    function recordStudyHistory(type, item, remembered) {
+        const now = new Date();
+        studyHistory.push({
+            at: now.toISOString(), type, category: studyHistoryLabel(type, item),
+            item: type === 'grammar' ? (item.expression || '') : (item.word || item.question || ''),
+            correct: Boolean(remembered)
+        });
+        saveStudyHistory();
+        if (document.getElementById('history-tab')?.classList.contains('active')) renderStudyHistory();
+    }
+
+    function historyDateKey(value) {
+        return new Date(value).toLocaleDateString('en-CA', { timeZone: 'Asia/Seoul' });
+    }
+
+    function renderStudyHistory() {
+        pruneStudyHistory();
+        const rows = [...studyHistory].sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+        const total = rows.length;
+        const correct = rows.filter(row => row.correct).length;
+        const byDay = new Map();
+        rows.forEach(row => {
+            const key = historyDateKey(row.at);
+            const day = byDay.get(key) || { total: 0, correct: 0, types: new Set(), lastAt: row.at };
+            day.total++;
+            if (row.correct) day.correct++;
+            day.types.add(row.category);
+            byDay.set(key, day);
+        });
+        document.getElementById('historyTotal').textContent = total.toLocaleString();
+        document.getElementById('historyAccuracy').textContent = total ? `${Math.round(correct / total * 100)}%` : '0%';
+        document.getElementById('historyActiveDays').textContent = byDay.size.toLocaleString();
+
+        const calendar = document.getElementById('historyCalendar');
+        calendar.replaceChildren();
+        const title = document.createElement('div');
+        title.className = 'history-month';
+        title.textContent = '최근 60일 학습 강도';
+        calendar.appendChild(title);
+        const grid = document.createElement('div');
+        grid.className = 'history-calendar';
+        for (let offset = STUDY_HISTORY_DAYS - 1; offset >= 0; offset--) {
+            const date = new Date();
+            date.setHours(12, 0, 0, 0);
+            date.setDate(date.getDate() - offset);
+            const key = historyDateKey(date.toISOString());
+            const day = byDay.get(key);
+            const cell = document.createElement('div');
+            cell.className = 'history-day';
+            const intensity = day ? Math.min(4, Math.ceil(day.total / 5)) : 0;
+            if (intensity) cell.classList.add(`level-${intensity}`);
+            cell.title = `${key}: ${day ? `${day.total}회 학습 · 정답 ${day.correct}회` : '학습 기록 없음'}`;
+            cell.innerHTML = `<strong>${date.getMonth() + 1}/${date.getDate()}</strong><span>${day ? day.total : 0}회</span>`;
+            grid.appendChild(cell);
+        }
+        calendar.appendChild(grid);
+
+        const list = document.getElementById('historyList');
+        list.replaceChildren();
+        const recentDays = [...byDay.entries()].sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14);
+        if (!recentDays.length) {
+            const empty = document.createElement('div');
+            empty.className = 'history-empty';
+            empty.textContent = '아직 학습 기록이 없습니다. 카드·퀴즈·문법·EJU를 학습해 보세요.';
+            list.appendChild(empty);
+            return;
+        }
+        recentDays.forEach(([date, day]) => {
+            const row = document.createElement('div');
+            row.className = 'history-row';
+            const main = document.createElement('div');
+            main.className = 'history-row-main';
+            const title = document.createElement('div');
+            title.className = 'history-row-title';
+            title.textContent = date;
+            const meta = document.createElement('div');
+            meta.className = 'history-row-meta';
+            meta.textContent = [...day.types].join(' · ');
+            main.append(title, meta);
+            const score = document.createElement('div');
+            score.className = 'history-row-score';
+            score.textContent = `${day.total}회 · ${Math.round(day.correct / day.total * 100)}%`;
+            row.append(main, score);
+            list.appendChild(row);
+        });
+    }
+
+    function exportStudyHistory() {
+        pruneStudyHistory();
+        const rows = [['날짜·시각', '유형', '분류', '항목', '결과'], ...studyHistory.map(row => [
+            new Date(row.at).toLocaleString('ko-KR'), row.type, row.category, row.item, row.correct ? '정답/기억함' : '오답/다시보기'
+        ])];
+        const csv = '\uFEFF' + rows.map(row => row.map(csvCell).join(',')).join('\r\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `jlpt-study-history-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+    }
+
+    function clearStudyHistory() {
+        if (!confirm('최근 60일 학습 기록을 모두 삭제할까요? SRS 복습 일정과 단어장은 유지됩니다.')) return;
+        studyHistory = [];
+        saveStudyHistory();
+        renderStudyHistory();
     }
 
     // 저장 데이터가 없거나 손상됐거나 형식이 맞지 않으면 기본 단어장을 사용합니다.
@@ -1362,6 +1551,7 @@
         if (tab === 'flashcard') filterWords();
         if (tab === 'vocab') renderVocabList();
         if (tab === 'dict' && document.getElementById('dictInput').value.trim()) searchDictionary();
+        if (tab === 'history') renderStudyHistory();
     }
 
     function levelLabel(level) {
@@ -1922,6 +2112,8 @@
         showGrammarQuestion();
     }
 
+    pruneStudyHistory();
+    saveStudyHistory();
     renderGrammarList();
 
 </script>

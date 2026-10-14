@@ -432,6 +432,10 @@
         .srs-known { background:#dcfce7; color:#166534; }
         .srs-again { background:#fee2e2; color:#991b1b; }
         .vocab-item-actions { flex-wrap:wrap; }
+        .tts-button { border:1px solid #c7d2fe; border-radius:8px; background:#eef2ff; color:#4338ca; padding:6px 9px; font-size:11px; font-weight:700; cursor:pointer; }
+        .tts-button:hover { background:#e0e7ff; }
+        .tts-button:disabled { opacity:.55; cursor:not-allowed; }
+        .card-tts-row { display:flex; justify-content:center; margin:8px 0 2px; }
         @media (max-width:420px) { .grammar-expression { font-size:15px; } .grammar-mode-tab { font-size:12px; } .quiz-meta { align-items:flex-start; } }
 
     </style>
@@ -466,6 +470,7 @@
             <div class="srs-status" id="srsStatusDisplay"></div>
             <div class="card-hint" id="cardHint">터치해서 뜻 확인하기</div>
         </div>
+        <div class="card-tts-row"><button id="ttsButton" class="tts-button" type="button" onclick="speakItem(currentCardItem)">🔊 일본어 발음 듣기</button></div>
         <div class="btn-group">
             <button id="unknownButton" class="btn-unknown" onclick="nextCard(false)">❌ 모르겠어요</button>
             <button id="knownButton" class="btn-known" onclick="nextCard(true)">⭕ 외웠어요</button>
@@ -542,7 +547,7 @@
         <button class="btn" type="button" onclick="startQuiz()">어휘 퀴즈 시작</button>
         <div id="quizPanel" class="quiz-panel" hidden>
             <div id="quizProgress" class="quiz-progress"></div>
-            <div class="quiz-question-card"><div class="quiz-meta"><span id="quizLevelBadge" class="quiz-level-badge"></span><span id="quizSrsBadge" class="quiz-srs-badge"></span></div><div id="quizQuestion" class="quiz-question"></div><div id="quizOptions" class="quiz-options"></div><div id="quizFeedback" class="quiz-feedback" role="status"></div></div>
+            <div class="quiz-question-card"><div class="quiz-meta"><span id="quizLevelBadge" class="quiz-level-badge"></span><span id="quizSrsBadge" class="quiz-srs-badge"></span></div><div id="quizQuestion" class="quiz-question"></div><button id="quizTtsButton" class="tts-button" type="button" onclick="speakItem(quizCurrent)">🔊 발음 듣기</button><div id="quizOptions" class="quiz-options"></div><div id="quizFeedback" class="quiz-feedback" role="status"></div></div>
             <button id="quizNext" class="btn quiz-next" type="button" onclick="nextQuizQuestion()" hidden>다음 문제</button>
         </div>
     </section>
@@ -586,6 +591,7 @@
                 <div class="quiz-question-card">
                     <div id="grammarQuizCategoryBadge" class="grammar-category"></div>
                     <div id="grammarQuizQuestion" class="quiz-question"></div>
+                    <button id="grammarQuizTtsButton" class="tts-button" type="button" onclick="speakJapanese(grammarCurrent?.expression || '')">🔊 발음 듣기</button>
                     <div id="grammarQuizOptions" class="quiz-options"></div>
                     <div id="grammarQuizFeedback" class="quiz-feedback" role="status" aria-live="polite"></div>
                 </div>
@@ -664,6 +670,28 @@
 
     function plainWord(text) {
         return String(text || '').replace(/\(([^()]*)\)/g, '');
+    }
+
+    function speakJapanese(text) {
+        if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+            alert("이 브라우저에서는 일본어 음성을 지원하지 않습니다. Chrome 또는 Safari를 사용해 주세요.");
+            return;
+        }
+        const raw = String(text || "").trim();
+        if (!raw) return;
+        const match = raw.match(/\(([^()]*)\)/);
+        const spoken = (match && /[ぁ-ゖァ-ヺー]/.test(match[1])) ? match[1] : raw.replace(/\([^()]*\)/g, "");
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(spoken);
+        utterance.lang = "ja-JP";
+        utterance.rate = 1;
+        const japaneseVoice = window.speechSynthesis.getVoices().find(voice => voice.lang && voice.lang.toLowerCase().startsWith("ja"));
+        if (japaneseVoice) utterance.voice = japaneseVoice;
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function speakItem(item) {
+        if (item) speakJapanese(item.word || item.expression || item.question || "");
     }
 
     function renderWord(target, item) {
@@ -1049,6 +1077,7 @@
     let initiallySeen = new Set();
     let reviewSeen = 0;
     let scopeWordCount = 0;
+    let currentCardItem = null;
 
     const cardEl = document.getElementById('flashcard');
     const wordDisplay = document.getElementById('wordDisplay');
@@ -1236,6 +1265,9 @@
         knownButton.disabled = false;
         const entry = studyQueue[currentIndex];
         const currentItem = entry.item;
+        currentCardItem = currentItem;
+        const ttsButton = document.getElementById("ttsButton");
+        if (ttsButton) ttsButton.disabled = !currentItem;
         const levelLabels = { BASIC: '필수', KANJI: '한자' };
         levelBadge.innerText = levelLabels[currentItem.level] || currentItem.level;
         renderWord(wordDisplay, currentItem);
@@ -1601,7 +1633,10 @@
             again.type = 'button'; again.className = 'srs-action-btn srs-again'; again.textContent = '모르겠어요';
             again.addEventListener('click', () => { recordSrsAnswer('vocab', item, false); renderVocabList(); });
             main.append(status);
-            actions.append(known, again);
+            const speak = document.createElement("button");
+            speak.type = "button"; speak.className = "tts-button"; speak.textContent = "🔊 발음";
+            speak.addEventListener("click", () => speakItem(item));
+            actions.append(speak, known, again);
             main.append(actions);
             row.append(main, badge);
             list.appendChild(row);
@@ -1678,6 +1713,8 @@
         const answers = shuffleArray([quizCurrent.sub, ...shuffleArray(distractors).slice(0, 3)]);
         quizCurrentOptions = answers;
         renderWord(question, quizCurrent);
+        const quizTtsButton = document.getElementById("quizTtsButton");
+        if (quizTtsButton) quizTtsButton.disabled = false;
         optionsBox.replaceChildren();
         feedback.textContent = '';
         next.hidden = true;
@@ -2001,7 +2038,10 @@
             const markAgain = document.createElement('button');
             markAgain.type = 'button'; markAgain.className = 'srs-action-btn srs-again'; markAgain.textContent = '모르겠어요';
             markAgain.addEventListener('click', () => { recordSrsAnswer('grammar', item, false); renderGrammarList(); });
-            srsActions.append(markKnown, markAgain);
+            const speak = document.createElement("button");
+            speak.type = "button"; speak.className = "tts-button"; speak.textContent = "🔊 발음";
+            speak.addEventListener("click", () => speakJapanese(item.expression));
+            srsActions.append(speak, markKnown, markAgain);
             row.append(head, meaning, srsStatus, srsActions);
             if (item.reading && /[\u3400-\u9fff]/.test(item.expression)) {
                 const reading = document.createElement('div');
@@ -2065,6 +2105,8 @@
         const category = grammarCurrent.sections.join(' · ');
         document.getElementById('grammarQuizCategoryBadge').textContent = category;
         question.textContent = grammarCurrent.expression;
+        const grammarTtsButton = document.getElementById("grammarQuizTtsButton");
+        if (grammarTtsButton) grammarTtsButton.disabled = false;
         const correct = grammarCurrent.meaning;
         let distractors = [...new Set(allGrammarRules.map(item => item.meaning).filter(value => value && value !== correct))];
         const selectedDistractors = shuffleArray(distractors).slice(0, 3);

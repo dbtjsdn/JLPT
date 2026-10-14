@@ -406,6 +406,9 @@
         .history-empty { padding:18px 8px; color:#64748b; font-size:12px; text-align:center; }
         .history-actions { display:flex; gap:8px; margin-top:10px; }
         .history-actions .btn { margin-top:0; }
+        .history-period-control { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:10px 0 12px; padding:10px 12px; border:1px solid #e2e8f0; border-radius:10px; background:#f8fafc; }
+        .history-period-control label { color:#475569; font-size:13px; font-weight:700; }
+        .history-period-control select { min-width:132px; }
 
         .grammar-mode-tabs { display:flex; gap:8px; margin:12px 0; }
         .grammar-mode-tab { flex:1; padding:10px 8px; border:1px solid #e2e8f0; border-radius:9px; background:#f8fafc; color:#475569; font-size:13px; font-weight:700; cursor:pointer; }
@@ -617,7 +620,14 @@
 
     <section id="history-tab" class="tab-content">
         <h2>학습 기록</h2>
-        <p class="quiz-note">최근 60일(약 2개월)의 학습 결과를 이 브라우저에 자동 저장합니다. 기기나 브라우저를 바꾸면 기록도 별도로 관리됩니다.</p>
+        <p class="quiz-note">학습 결과는 이 브라우저에 최근 60일간 자동 저장됩니다. 표시 범위는 최근 1개월 또는 2개월로 바꿀 수 있으며, 기기나 브라우저를 바꾸면 기록도 별도로 관리됩니다.</p>
+        <div class="history-period-control">
+            <label for="historyRange">표시 기간</label>
+            <select id="historyRange" class="level-select" onchange="setStudyHistoryRange(this.value)">
+                <option value="30">최근 1개월</option>
+                <option value="60">최근 2개월</option>
+            </select>
+        </div>
         <div class="history-summary">
             <div class="history-stat"><strong id="historyTotal">0</strong><span>총 학습</span></div>
             <div class="history-stat"><strong id="historyAccuracy">0%</strong><span>정답률</span></div>
@@ -882,7 +892,22 @@
     }
 
     const STUDY_HISTORY_KEY = 'jlpt_study_history_v1';
-    const STUDY_HISTORY_DAYS = 60;
+    const STUDY_HISTORY_RETENTION_DAYS = 60;
+    const STUDY_HISTORY_RANGE_KEY = 'jlpt_study_history_range_v1';
+
+    function getStudyHistoryRangeDays() {
+        return localStorage.getItem(STUDY_HISTORY_RANGE_KEY) === '60' ? 60 : 30;
+    }
+
+    function setStudyHistoryRange(value) {
+        const rangeDays = String(value) === '60' ? 60 : 30;
+        try {
+            localStorage.setItem(STUDY_HISTORY_RANGE_KEY, String(rangeDays));
+        } catch (error) {
+            console.warn('기록 표시 기간을 저장하지 못했습니다.', error);
+        }
+        renderStudyHistory();
+    }
 
     function loadStudyHistory() {
         try {
@@ -897,7 +922,7 @@
     let studyHistory = loadStudyHistory();
 
     function pruneStudyHistory() {
-        const cutoff = Date.now() - STUDY_HISTORY_DAYS * 24 * 60 * 60 * 1000;
+        const cutoff = Date.now() - STUDY_HISTORY_RETENTION_DAYS * 24 * 60 * 60 * 1000;
         studyHistory = studyHistory.filter(row => Date.parse(row.at) >= cutoff);
     }
 
@@ -935,7 +960,13 @@
 
     function renderStudyHistory() {
         pruneStudyHistory();
-        const rows = [...studyHistory].sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+        const rangeDays = getStudyHistoryRangeDays();
+        const rangeSelect = document.getElementById('historyRange');
+        if (rangeSelect) rangeSelect.value = String(rangeDays);
+        const cutoff = Date.now() - rangeDays * 24 * 60 * 60 * 1000;
+        const rows = [...studyHistory]
+            .filter(row => Date.parse(row.at) >= cutoff)
+            .sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
         const total = rows.length;
         const correct = rows.filter(row => row.correct).length;
         const byDay = new Map();
@@ -955,11 +986,11 @@
         calendar.replaceChildren();
         const title = document.createElement('div');
         title.className = 'history-month';
-        title.textContent = '최근 60일 학습 강도';
+        title.textContent = `최근 ${rangeDays}일 학습 강도`;
         calendar.appendChild(title);
         const grid = document.createElement('div');
         grid.className = 'history-calendar';
-        for (let offset = STUDY_HISTORY_DAYS - 1; offset >= 0; offset--) {
+        for (let offset = rangeDays - 1; offset >= 0; offset--) {
             const date = new Date();
             date.setHours(12, 0, 0, 0);
             date.setDate(date.getDate() - offset);
@@ -977,7 +1008,7 @@
 
         const list = document.getElementById('historyList');
         list.replaceChildren();
-        const recentDays = [...byDay.entries()].sort((a, b) => b[0].localeCompare(a[0])).slice(0, 14);
+        const recentDays = [...byDay.entries()].sort((a, b) => b[0].localeCompare(a[0])).slice(0, rangeDays);
         if (!recentDays.length) {
             const empty = document.createElement('div');
             empty.className = 'history-empty';
@@ -1023,7 +1054,7 @@
     }
 
     function clearStudyHistory() {
-        if (!confirm('최근 60일 학습 기록을 모두 삭제할까요? SRS 복습 일정과 단어장은 유지됩니다.')) return;
+        if (!confirm('저장된 최근 60일 학습 기록을 모두 삭제할까요? SRS 복습 일정과 단어장은 유지됩니다.')) return;
         studyHistory = [];
         saveStudyHistory();
         renderStudyHistory();

@@ -454,6 +454,9 @@
         .wrong-note-count { flex:0 0 auto; color:#b91c1c; font-size:12px; font-weight:700; }
         .wrong-note-empty { padding:20px 12px; border:1px dashed #cbd5e1; border-radius:9px; color:#64748b; text-align:center; }
         .csv-help { margin:5px 0 8px; color:#475569; font-size:11px; line-height:1.5; }
+        .csv-record-import { display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin-top:7px; }
+        .csv-record-import input { max-width:190px; font-size:10px; }
+        .csv-progress-status { width:100%; margin-top:4px; color:#475569; font-size:11px; }
         @media (max-width:420px) { .grammar-expression { font-size:15px; } .grammar-mode-tab { font-size:12px; } .quiz-meta { align-items:flex-start; } }
 
     </style>
@@ -492,7 +495,7 @@
             <button id="unknownButton" class="btn-unknown" onclick="nextCard(false)">❌ 모르겠어요</button>
             <button id="knownButton" class="btn-known" onclick="nextCard(true)">⭕ 외웠어요</button>
         </div>
-        <div class="card-undo-row"><button id="undoCardButton" class="btn-undo" type="button" onclick="undoLastCard()" disabled>↩️ 방금 답변 뒤로가기</button></div>
+        <div class="card-undo-row"><button id="undoCardButton" class="btn-undo" type="button" onclick="undoLastCard()" disabled>↩️ 이전 카드로 돌아가기</button></div>
         <div class="progress" id="progressText">진행도: 0 / 0</div>
         <div class="review-report">
             <div class="review-report-copy">
@@ -501,6 +504,11 @@
                 <div class="review-report-note">이 브라우저에 자동 저장됩니다. CSV로 내려받아 자료로 제출할 수 있어요.</div>
             </div>
             <button class="btn-export" type="button" onclick="exportReviewStats()">CSV로 자료 저장</button>
+            <div class="csv-record-import">
+                <input id="progressCsvFile" type="file" accept=".csv,text/csv" aria-label="학습 기록 CSV 파일">
+                <button class="btn-export" type="button" onclick="importProgressCsv()">CSV 기록 불러오기</button>
+            </div>
+            <div id="progressCsvStatus" class="csv-progress-status" role="status" aria-live="polite"></div>
         </div>
         <button id="restartWrongButton" class="btn-restart" onclick="restartWrongWords()" hidden>복습이 필요한 단어 다시 회독</button>
     </section>
@@ -1552,6 +1560,49 @@
 
     function csvHeaderIndex(headers, patterns) {
         return headers.findIndex(value => patterns.some(pattern => pattern.test(value)));
+    }
+
+    async function importProgressCsv() {
+        const input = document.getElementById('progressCsvFile');
+        const status = document.getElementById('progressCsvStatus');
+        const file = input?.files?.[0];
+        if (!file) { status.textContent = '학습 기록 CSV 파일을 먼저 선택해주세요.'; return; }
+        try {
+            const rows = parseCsvText(await file.text());
+            const headerIndex = rows.findIndex(row => row.some(cell => /단어·표현·문항|word/i.test(cell)) && row.some(cell => /srs level/i.test(cell)));
+            if (headerIndex < 0) throw new Error('앱에서 저장한 학습 기록 CSV 형식을 찾지 못했습니다.');
+            const headers = rows[headerIndex].map(v => v.toLowerCase());
+            const typeIndex = csvHeaderIndex(headers, [/^유형$/, /type/]);
+            const levelIndex = csvHeaderIndex(headers, [/^분류$/, /level/, /급수/]);
+            const wordIndex = csvHeaderIndex(headers, [/단어·표현·문항/, /word/]);
+            const meaningIndex = csvHeaderIndex(headers, [/뜻·분류/, /뜻/, /meaning/, /sub/]);
+            const srsIndex = csvHeaderIndex(headers, [/srs level/i]);
+            const intervalIndex = csvHeaderIndex(headers, [/intervaldays/i]);
+            const nextReviewIndex = csvHeaderIndex(headers, [/nextreview/i]);
+            let restored = 0;
+            for (const row of rows.slice(headerIndex + 1)) {
+                if (typeIndex >= 0 && row[typeIndex] && row[typeIndex] !== '어휘') continue;
+                const level = row[levelIndex] || '';
+                const word = row[wordIndex] || '';
+                const sub = row[meaningIndex] || '';
+                if (!level || !word || !sub || srsIndex < 0) continue;
+                const item = allWords.find(candidate => candidate.level === level && candidate.word === word && candidate.sub === sub);
+                if (!item) continue;
+                const status = { srsLevel: Math.max(0, Math.min(5, Number(row[srsIndex]) || 0)), intervalDays: Math.max(0, Number(row[intervalIndex]) || 0), nextReview: new Date().toISOString() };
+                if (nextReviewIndex >= 0 && Date.parse(row[nextReviewIndex])) status.nextReview = new Date(row[nextReviewIndex]).toISOString();
+                srsProgress[srsKey('vocab', item)] = status;
+                Object.assign(item, status);
+                restored++;
+            }
+            saveSrsProgress();
+            filterWords();
+            renderVocabList();
+            status.textContent = `${restored}개 단어의 학습 기록을 복원했습니다.`;
+            input.value = '';
+        } catch (error) {
+            console.error(error);
+            status.textContent = `학습 기록을 읽지 못했습니다: ${error.message}`;
+        }
     }
 
     async function importCsv() {

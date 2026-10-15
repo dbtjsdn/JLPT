@@ -439,6 +439,21 @@
         .tts-button:hover { background:#e0e7ff; }
         .tts-button:disabled { opacity:.55; cursor:not-allowed; }
         .card-tts-row { display:flex; justify-content:center; margin:8px 0 2px; }
+        .card-undo-row { display:flex; justify-content:center; margin:8px 0 0; }
+        .btn-undo { border:1px solid #cbd5e1; border-radius:8px; background:#f8fafc; color:#475569; padding:7px 12px; font-size:12px; font-weight:700; cursor:pointer; }
+        .btn-undo:hover { background:#e2e8f0; }
+        ruby { ruby-position: over; }
+        ruby rt { font-size:.48em; line-height:1; font-weight:600; color:#64748b; user-select:none; }
+        .csv-import-section { margin-top:14px; padding:12px; border:1px solid #dbeafe; border-radius:10px; background:#eff6ff; }
+        .csv-file-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+        .wrong-note-list { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+        .wrong-note-row { display:flex; align-items:center; gap:8px; padding:10px; border:1px solid #fecaca; border-radius:9px; background:#fff7f7; }
+        .wrong-note-main { flex:1; min-width:0; }
+        .wrong-note-word { font-weight:700; font-size:16px; color:#7f1d1d; }
+        .wrong-note-meta { margin-top:3px; color:#64748b; font-size:12px; line-height:1.4; }
+        .wrong-note-count { flex:0 0 auto; color:#b91c1c; font-size:12px; font-weight:700; }
+        .wrong-note-empty { padding:20px 12px; border:1px dashed #cbd5e1; border-radius:9px; color:#64748b; text-align:center; }
+        .csv-help { margin:5px 0 8px; color:#475569; font-size:11px; line-height:1.5; }
         @media (max-width:420px) { .grammar-expression { font-size:15px; } .grammar-mode-tab { font-size:12px; } .quiz-meta { align-items:flex-start; } }
 
     </style>
@@ -454,6 +469,7 @@
         <button class="nav-tab" type="button" onclick="switchTab('grammar', this)">문법</button>
         <button class="nav-tab" type="button" onclick="switchTab('social', this)">EJU</button>
         <button class="nav-tab" type="button" onclick="switchTab('dict', this)">사전</button>
+        <button class="nav-tab" type="button" onclick="switchTab('wrong', this)">오답노트</button>
         <button class="nav-tab" type="button" onclick="switchTab('history', this)">기록</button>
     </div>
 
@@ -476,6 +492,7 @@
             <button id="unknownButton" class="btn-unknown" onclick="nextCard(false)">❌ 모르겠어요</button>
             <button id="knownButton" class="btn-known" onclick="nextCard(true)">⭕ 외웠어요</button>
         </div>
+        <div class="card-undo-row"><button id="undoCardButton" class="btn-undo" type="button" onclick="undoLastCard()" disabled>↩️ 방금 답변 뒤로가기</button></div>
         <div class="progress" id="progressText">진행도: 0 / 0</div>
         <div class="review-report">
             <div class="review-report-copy">
@@ -497,6 +514,16 @@
             <label for="vocabReviewFilter">복습 시점</label>
             <select id="vocabReviewFilter" class="level-select srs-filter" onchange="renderVocabList()"><option value="ALL">전체 단어</option><option value="DUE">오늘 복습할 단어</option><option value="LATER">복습 예정 단어</option></select>
         </div>
+        <div class="csv-import-section">
+            <h3>📥 CSV에서 단어 불러오기</h3>
+            <div class="csv-help">이 앱에서 저장한 학습 CSV 또는 열 제목이 있는 일반 CSV(단어·읽기·뜻·급수)를 불러올 수 있습니다. 파일은 브라우저 안에서만 처리됩니다.</div>
+            <div class="csv-file-row">
+                <input id="csvFile" type="file" accept=".csv,text/csv" aria-label="단어를 가져올 CSV 파일">
+                <button class="btn-pdf" type="button" onclick="importCsv()">CSV 불러오기</button>
+            </div>
+            <div id="csvStatus" class="pdf-status" role="status" aria-live="polite"></div>
+        </div>
+
         <input id="vocabSearch" type="search" placeholder="단어·읽기·뜻 검색" autocomplete="off">
         <div id="vocabCount" class="list-count"></div>
         <div class="vocab-list" id="vocab-list-container"></div>
@@ -533,6 +560,8 @@
                 <div class="pdf-actions"><button class="btn-pdf" type="button" onclick="savePdfWords()">선택한 단어 추가</button><button type="button" onclick="clearPdfPreview()">취소</button></div>
             </div>
         </div>
+
+
     </section>
 
     <section id="quiz-tab" class="tab-content">
@@ -613,6 +642,29 @@
             <div class="quiz-question-card"><div id="socialQuestion" class="quiz-question"></div><div id="socialOptions" class="quiz-options"></div><div id="socialFeedback" class="quiz-feedback" role="status"></div></div>
             <button id="socialNext" class="btn quiz-next" type="button" onclick="nextSocialQuestion()" hidden>다음 문제</button>
         </div>
+    </section>
+
+    <section id="wrong-tab" class="tab-content">
+        <h2>오답노트 퀴즈</h2>
+        <p class="quiz-note">카드에서 <strong>모르겠어요</strong>를 누른 단어만 모아 뜻 고르기 퀴즈로 다시 풀어봅니다.</p>
+        <div id="wrongNoteSummary" class="list-count"></div>
+        <button id="wrongQuizStart" class="btn" type="button" onclick="startWrongQuiz()">오답노트 퀴즈 시작</button>
+        <div id="wrongQuizPanel" class="quiz-panel" hidden>
+            <div id="wrongQuizProgress" class="quiz-progress"></div>
+            <div class="quiz-question-card">
+                <div id="wrongQuizLevel" class="quiz-meta"></div>
+                <div id="wrongQuizQuestion" class="quiz-question"></div>
+                <button id="wrongQuizTts" class="tts-button" type="button" onclick="speakItem(wrongQuizCurrent)">🔊 발음 듣기</button>
+                <div id="wrongQuizOptions" class="quiz-options"></div>
+                <div id="wrongQuizFeedback" class="quiz-feedback" role="status" aria-live="polite"></div>
+            </div>
+            <button id="wrongQuizNext" class="btn quiz-next" type="button" onclick="nextWrongQuizQuestion()" hidden>다음 문제</button>
+        </div>
+        <div class="history-actions">
+            <button class="btn" type="button" onclick="renderWrongNote()">오답 새로고침</button>
+            <button class="btn" type="button" onclick="clearWrongNote()" style="background:#64748b;">오답노트 초기화</button>
+        </div>
+        <details><summary>오답 단어 목록 보기</summary><div id="wrongNoteList" class="wrong-note-list" aria-live="polite"></div></details>
     </section>
 
     <section id="history-tab" class="tab-content">
@@ -791,6 +843,7 @@
 
     function renderWord(target, item) {
         renderJapaneseRuby(target, item.word || '', item.reading || '');
+        target.setAttribute('aria-label', `${item.word || ''}${item.reading ? `, ${item.reading}` : ''}`);
     }
 
     // JLPT N5 ~ N1 기본 샘플 데이터 (후리가나 적용)
@@ -1158,6 +1211,11 @@
     let reviewSeen = 0;
     let scopeWordCount = 0;
     let currentCardItem = null;
+    let lastCardAction = null;
+    let wrongQuizDeck = [];
+    let wrongQuizIndex = 0;
+    let wrongQuizCurrent = null;
+    let wrongQuizAnswered = false;
 
     const cardEl = document.getElementById('flashcard');
     const wordDisplay = document.getElementById('wordDisplay');
@@ -1169,6 +1227,7 @@
     const levelFilter = document.getElementById('levelFilter');
     const unknownButton = document.getElementById('unknownButton');
     const knownButton = document.getElementById('knownButton');
+    const undoCardButton = document.getElementById('undoCardButton');
     const restartWrongButton = document.getElementById('restartWrongButton');
     const againStatsSummary = document.getElementById('againStatsSummary');
     const AGAIN_STATS_KEY = 'jlpt_vocab_again_stats_v1';
@@ -1225,6 +1284,7 @@
         againStats[key] = row;
         saveAgainStats();
         updateReviewStats();
+        if (document.getElementById('wrong-tab')?.classList.contains('active')) renderWrongNote();
     }
 
     function csvCell(value) {
@@ -1291,6 +1351,7 @@
         needsReview = new Set();
         initiallySeen = new Set();
         reviewSeen = 0;
+        lastCardAction = null;
         updateReviewStats();
         updateCard();
     }
@@ -1311,6 +1372,7 @@
         isFlipped = false;
         cardEl.classList.remove('show');
         restartWrongButton.hidden = true;
+        if (undoCardButton) undoCardButton.disabled = !lastCardAction;
 
         if (scopeWordCount === 0) {
             levelBadge.innerText = "-";
@@ -1373,6 +1435,19 @@
         if (filteredWords.length === 0 || currentIndex >= studyQueue.length) return;
         const entry = studyQueue[currentIndex];
         const item = entry.item;
+        lastCardAction = {
+            currentIndex,
+            studyQueue: studyQueue.map(row => ({ ...row })),
+            knownWords: [...knownWords],
+            needsReview: [...needsReview],
+            initiallySeen: [...initiallySeen],
+            reviewSeen,
+            sessionNewTotal,
+            isFlipped,
+            srsProgress: JSON.parse(JSON.stringify(srsProgress)),
+            againStats: JSON.parse(JSON.stringify(againStats)),
+            studyHistory: studyHistory.slice()
+        };
         if (entry.kind === 'new') initiallySeen.add(item);
         else reviewSeen++;
 
@@ -1381,16 +1456,38 @@
         if (known) {
             knownWords.add(item);
             needsReview.delete(item);
-            // 같은 단어가 오늘 대기열에 재등장 예정이면 정답 처리 후 제거합니다.
             studyQueue = studyQueue.filter((pending, index) => index <= currentIndex || pending.item !== item);
         } else {
             knownWords.delete(item);
             needsReview.add(item);
-            // 모르겠어요: 복습 레벨을 0으로 초기화하고 오늘 큐의 맨 뒤에서 다시 출제합니다.
             studyQueue.push({ item, kind: 'retry' });
         }
         currentIndex++;
         updateCard();
+    }
+
+    function undoLastCard() {
+        if (!lastCardAction) return;
+        const snapshot = lastCardAction;
+        currentIndex = snapshot.currentIndex;
+        studyQueue = snapshot.studyQueue.map(row => ({ ...row }));
+        knownWords = new Set(snapshot.knownWords);
+        needsReview = new Set(snapshot.needsReview);
+        initiallySeen = new Set(snapshot.initiallySeen);
+        reviewSeen = snapshot.reviewSeen;
+        sessionNewTotal = snapshot.sessionNewTotal;
+        isFlipped = snapshot.isFlipped;
+        srsProgress = snapshot.srsProgress;
+        againStats = snapshot.againStats;
+        studyHistory = snapshot.studyHistory;
+        saveSrsProgress();
+        saveAgainStats();
+        saveStudyHistory();
+        updateReviewStats();
+        lastCardAction = null;
+        updateCard();
+        if (isFlipped) cardEl.classList.add('show');
+        cardHint.innerText = '방금 답변을 되돌렸습니다';
     }
 
     function restartWrongWords() {
@@ -1433,6 +1530,81 @@
         }
         filterWords();
         renderVocabList();
+    }
+
+    function parseCsvText(text) {
+        const rows = [];
+        let row = [], cell = '', quoted = false;
+        for (let i = 0; i < text.length; i++) {
+            const ch = text[i];
+            if (quoted) {
+                if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+                else if (ch === '"') quoted = false;
+                else cell += ch;
+            } else if (ch === '"') quoted = true;
+            else if (ch === ',') { row.push(cell); cell = ''; }
+            else if (ch === '\n') { row.push(cell.replace(/\r$/, '')); rows.push(row); row = []; cell = ''; }
+            else cell += ch;
+        }
+        if (cell.length || row.length) { row.push(cell); rows.push(row); }
+        return rows.map(r => r.map(v => String(v ?? '').replace(/^\uFEFF/, '').trim()));
+    }
+
+    function csvHeaderIndex(headers, patterns) {
+        return headers.findIndex(value => patterns.some(pattern => pattern.test(value)));
+    }
+
+    async function importCsv() {
+        const input = document.getElementById('csvFile');
+        const status = document.getElementById('csvStatus');
+        const file = input?.files?.[0];
+        if (!file) { status.textContent = 'CSV 파일을 먼저 선택해주세요.'; return; }
+        try {
+            const rows = parseCsvText(await file.text());
+            let headerIndex = rows.findIndex(row => row.some(cell => /단어·표현·문항|일본어|단어|word/i.test(cell)) && row.some(cell => /뜻|의미|sub|meaning|한국어/i.test(cell)));
+            if (headerIndex < 0) headerIndex = 0;
+            const headers = rows[headerIndex].map(v => v.toLowerCase());
+            const wordIndex = csvHeaderIndex(headers, [/단어·표현·문항/, /^단어$/, /일본어/, /word/]);
+            const readingIndex = csvHeaderIndex(headers, [/읽기/, /후리가나/, /reading/]);
+            const meaningIndex = csvHeaderIndex(headers, [/뜻·분류/, /^뜻$/, /의미/, /한국어/, /meaning/, /sub/]);
+            const levelIndex = csvHeaderIndex(headers, [/^분류$/, /급수/, /레벨/, /level/, /jlpt/]);
+            const srsIndex = csvHeaderIndex(headers, [/srs level/i]);
+            const intervalIndex = csvHeaderIndex(headers, [/intervaldays/i]);
+            const nextReviewIndex = csvHeaderIndex(headers, [/nextreview/i]);
+            if (wordIndex < 0 || meaningIndex < 0) throw new Error('단어와 뜻 열을 찾지 못했습니다.');
+            const levelMap = { '정치용어':'POLITICS', '재난용어':'DISASTER', '필수 어휘':'BASIC', '한자':'KANJI', '한자 2136':'KANJI' };
+            const incoming = [];
+            for (const row of rows.slice(headerIndex + 1)) {
+                const rawWord = row[wordIndex] || '';
+                const sub = row[meaningIndex] || '';
+                if (!rawWord || !sub || /^(유형|전체 학습|자료|내보낸)/.test(rawWord)) continue;
+                const reading = readingIndex >= 0 ? row[readingIndex] || '' : '';
+                let word = rawWord.replace(/[\uFEFF]/g, '').trim();
+                if (reading && !/[（(][ぁ-ゖァ-ヺー]/.test(word)) word += `(${reading})`;
+                let level = levelIndex >= 0 ? (row[levelIndex] || 'N5') : 'N5';
+                level = levelMap[level] || (level.match(/N[1-5]/i)?.[0].toUpperCase() || level);
+                const item = { level, word, sub, reading, srsLevel: 0, intervalDays: 0, nextReview: new Date().toISOString() };
+                if (srsIndex >= 0) item.srsLevel = Math.max(0, Math.min(5, Number(row[srsIndex]) || 0));
+                if (intervalIndex >= 0) item.intervalDays = Math.max(0, Number(row[intervalIndex]) || 0);
+                if (nextReviewIndex >= 0 && Date.parse(row[nextReviewIndex])) item.nextReview = new Date(row[nextReviewIndex]).toISOString();
+                incoming.push(item);
+            }
+            const existingKeys = new Set(allWords.map(item => JSON.stringify([item.level, item.word, item.sub])));
+            let added = 0;
+            for (const item of incoming) {
+                const key = JSON.stringify([item.level, item.word, item.sub]);
+                if (existingKeys.has(key)) continue;
+                allWords.push(item); existingKeys.add(key); added++;
+            }
+            if (!saveStorage()) return;
+            status.textContent = `${added}개 단어를 불러왔습니다. (새 항목 ${added}개 / 읽은 행 ${incoming.length}개)`;
+            renderVocabList();
+            filterWords();
+            input.value = '';
+        } catch (error) {
+            console.error(error);
+            status.textContent = `CSV를 읽지 못했습니다: ${error.message}`;
+        }
     }
 
     function saveStorage() {
@@ -1649,6 +1821,106 @@
         document.getElementById('pdfPreview').style.display = 'none';
     }
 
+    function wrongQuizRows() {
+        return Object.values(againStats).filter(row => row && Number(row.count) > 0).map(row => {
+            const item = allWords.find(candidate => candidate.level === row.level && candidate.word === row.word && candidate.sub === row.sub);
+            return item || { level: row.level, word: row.word, sub: row.sub };
+        });
+    }
+
+    function startWrongQuiz() {
+        wrongQuizDeck = shuffleArray(wrongQuizRows().slice());
+        wrongQuizIndex = 0;
+        wrongQuizCurrent = null;
+        document.getElementById('wrongQuizPanel').hidden = false;
+        showWrongQuizQuestion();
+    }
+
+    function showWrongQuizQuestion() {
+        const panel = document.getElementById('wrongQuizPanel');
+        const question = document.getElementById('wrongQuizQuestion');
+        const options = document.getElementById('wrongQuizOptions');
+        const feedback = document.getElementById('wrongQuizFeedback');
+        const next = document.getElementById('wrongQuizNext');
+        if (wrongQuizIndex >= wrongQuizDeck.length) {
+            wrongQuizCurrent = null;
+            document.getElementById('wrongQuizProgress').textContent = `완료 · ${wrongQuizDeck.length}개 오답 단어를 모두 풀었습니다.`;
+            question.textContent = '오답노트 퀴즈 완료!'; options.replaceChildren(); feedback.textContent = '잘했습니다. 다시 틀린 단어는 오답노트에 계속 남아 있습니다.'; next.hidden = true; return;
+        }
+        wrongQuizAnswered = false;
+        wrongQuizCurrent = wrongQuizDeck[wrongQuizIndex];
+        document.getElementById('wrongQuizProgress').textContent = `문제 ${wrongQuizIndex + 1} / ${wrongQuizDeck.length}`;
+        const levelNames = { N1:'JLPT N1', N2:'JLPT N2', N3:'JLPT N3', N4:'JLPT N4', N5:'JLPT N5', BASIC:'필수 어휘', KANJI:'한자 2136', POLITICS:'정치용어', DISASTER:'재난용어' };
+        document.getElementById('wrongQuizLevel').textContent = levelNames[wrongQuizCurrent.level] || wrongQuizCurrent.level || '오답 단어';
+        renderJapaneseRuby(question, wrongQuizCurrent.word, wrongQuizCurrent.reading || '');
+        options.replaceChildren(); feedback.textContent = ''; next.hidden = true;
+        const distractors = allWords.filter(item => item.sub && item.sub !== wrongQuizCurrent.sub).map(item => item.sub);
+        const choices = [wrongQuizCurrent.sub, ...shuffleArray([...new Set(distractors)]).slice(0, 3)];
+        shuffleArray(choices).forEach(choice => {
+            const button = document.createElement('button'); button.className='quiz-opt-btn'; button.type='button'; button.textContent=choice;
+            button.addEventListener('click', () => answerWrongQuiz(choice, button)); options.appendChild(button);
+        });
+    }
+
+    function answerWrongQuiz(answer, selectedButton) {
+        if (wrongQuizAnswered || !wrongQuizCurrent) return;
+        wrongQuizAnswered = true;
+        const correct = answer === wrongQuizCurrent.sub;
+        recordSrsAnswer('vocab', wrongQuizCurrent, correct);
+        document.querySelectorAll('#wrongQuizOptions .quiz-opt-btn').forEach(button => { button.disabled = true; if (button.textContent === wrongQuizCurrent.sub) button.classList.add('correct'); else if (button === selectedButton) button.classList.add('wrong'); });
+        document.getElementById('wrongQuizFeedback').textContent = correct ? '정답입니다!' : `아쉬워요. 정답은 “${wrongQuizCurrent.sub}”입니다.`;
+        const next = document.getElementById('wrongQuizNext'); next.textContent = wrongQuizIndex === wrongQuizDeck.length - 1 ? '결과 보기' : '다음 문제'; next.hidden = false;
+    }
+
+    function nextWrongQuizQuestion() { wrongQuizIndex++; showWrongQuizQuestion(); }
+
+    function renderWrongNote() {
+        const list = document.getElementById('wrongNoteList');
+        const summary = document.getElementById('wrongNoteSummary');
+        if (!list || !summary) return;
+        const levelNames = { N1:'JLPT N1', N2:'JLPT N2', N3:'JLPT N3', N4:'JLPT N4', N5:'JLPT N5', BASIC:'필수 어휘', KANJI:'한자 2136', POLITICS:'정치용어', DISASTER:'재난용어' };
+        const rows = Object.values(againStats).filter(row => row && Number(row.count) > 0)
+            .sort((a,b) => Number(b.count) - Number(a.count) || String(a.word).localeCompare(String(b.word), 'ja'));
+        summary.textContent = rows.length ? `오답 단어 ${rows.length}개 · 모르겠어요 ${rows.reduce((sum,row)=>sum+Number(row.count||0),0)}회` : '아직 오답 기록이 없습니다.';
+        const startButton = document.getElementById('wrongQuizStart');
+        if (startButton) startButton.disabled = !rows.length;
+        list.replaceChildren();
+        if (!rows.length) {
+            const empty=document.createElement('div'); empty.className='wrong-note-empty'; empty.textContent='카드에서 모르겠어요를 누른 단어가 여기에 표시됩니다.'; list.appendChild(empty); return;
+        }
+        rows.forEach(row => {
+            const wrap=document.createElement('div'); wrap.className='wrong-note-row';
+            const main=document.createElement('div'); main.className='wrong-note-main';
+            const word=document.createElement('div'); word.className='wrong-note-word';
+            renderJapaneseRuby(word, row.word, row.reading || '');
+            const meta=document.createElement('div'); meta.className='wrong-note-meta'; meta.textContent=`${row.sub} · ${levelNames[row.level] || row.level}`;
+            main.append(word,meta);
+            const count=document.createElement('div'); count.className='wrong-note-count'; count.textContent=`${row.count}회`;
+            const study=document.createElement('button'); study.className='srs-action-btn srs-again'; study.type='button'; study.textContent='카드 보기';
+            study.addEventListener('click',()=>studyWrongLevel(row.level));
+            wrap.append(main,count,study); list.appendChild(wrap);
+        });
+    }
+
+    function studyWrongLevel(level) {
+        levelFilter.value = level;
+        const flashButton = document.querySelector('.nav-tab[onclick*="flashcard"]');
+        switchTab('flashcard', flashButton);
+        cardHint.textContent = '오답노트의 급수 카드입니다';
+    }
+
+    function clearWrongNote() {
+        if (!Object.keys(againStats).length) return;
+        if (!confirm('오답노트와 모르겠어요 누적 기록을 모두 지울까요?')) return;
+        againStats = {};
+        lastCardAction = null;
+        wrongQuizDeck = [];
+        wrongQuizCurrent = null;
+        saveAgainStats();
+        updateReviewStats();
+        renderWrongNote();
+    }
+
     // 탭 메뉴: 기존 회독 상태는 탭을 이동해도 유지합니다.
     function switchTab(tab, button) {
         document.querySelectorAll('.nav-tab').forEach(node => node.classList.remove('active'));
@@ -1660,6 +1932,7 @@
         if (tab === 'vocab') renderVocabList();
         if (tab === 'dict' && document.getElementById('dictInput').value.trim()) searchDictionary();
         if (tab === 'history') renderStudyHistory();
+        if (tab === 'wrong') renderWrongNote();
     }
 
     function levelLabel(level) {

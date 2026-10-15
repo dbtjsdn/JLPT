@@ -860,8 +860,21 @@
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(spoken);
         utterance.lang = 'ja-JP';
-        utterance.rate = 1;
-        const japaneseVoice = window.speechSynthesis.getVoices().find(voice => voice.lang && voice.lang.toLowerCase().startsWith('ja'));
+        utterance.rate = 0.92;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        // 기기마다 첫 번째 ja-JP 음성이 로봇처럼 들릴 수 있으므로
+        // Google/Microsoft/Apple의 일본어 원어민 계열 음성을 우선합니다.
+        const japaneseVoices = window.speechSynthesis.getVoices()
+            .filter(voice => voice.lang && voice.lang.toLowerCase().startsWith('ja'));
+        const preferredVoiceNames = [
+            /google.*日本語/i, /japanese/i, /日本語/i,
+            /nanami|keita|naoki|haruka|ayumi|kyoko|otoya|mizuki/i
+        ];
+        const japaneseVoice = preferredVoiceNames.reduce((selected, pattern) =>
+            selected || japaneseVoices.find(voice => pattern.test(voice.name)), null)
+            || japaneseVoices.find(voice => voice.localService)
+            || japaneseVoices[0];
         if (japaneseVoice) utterance.voice = japaneseVoice;
         window.speechSynthesis.speak(utterance);
     }

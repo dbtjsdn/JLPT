@@ -491,6 +491,7 @@
                 <option value="ALL">전체 보기</option><option value="N5">JLPT N5</option><option value="N4">JLPT N4</option><option value="N3">JLPT N3</option><option value="N2">JLPT N2</option><option value="N1">JLPT N1</option><option value="BASIC">필수 어휘</option><option value="KANJI">한자 2136</option>
             <option value="POLITICS">정치용어</option><option value="DISASTER">재난용어</option></select>
         </div>
+        <button id="rubyToggleButton" class="furigana-toggle" type="button" onclick="toggleRuby()">후리가나 끄기</button>
         <div class="card" id="flashcard" onclick="toggleCard()">
             <div class="card-level-badge" id="levelBadge">N5</div>
             <div class="card-word" id="wordDisplay">단어 로딩중...</div>
@@ -736,7 +737,20 @@
     // 괄호 속 읽기와 별도 reading 데이터를 화면에서는 ruby 표기로 통일합니다.
     // DOM 노드만 사용해 단어 데이터가 HTML로 실행되지 않도록 합니다.
     const HAS_KANJI = /[\u3400-\u4DBF\u4E00-\u9FFF]/;
-
+    let rubyEnabled = localStorage.getItem('jlptRubyEnabled') !== 'false';
+    function updateRubyToggle() {
+        const button = document.getElementById('rubyToggleButton');
+        if (button) button.textContent = rubyEnabled ? '후리가나 끄기' : '후리가나 켜기';
+    }
+    function toggleRuby() {
+        rubyEnabled = !rubyEnabled;
+        localStorage.setItem('jlptRubyEnabled', String(rubyEnabled));
+        updateRubyToggle();
+        filterWords();
+        renderVocabList();
+        if (typeof renderGrammarList === 'function') renderGrammarList();
+        if (typeof searchDictionary === 'function' && document.getElementById('dictInput').value.trim()) searchDictionary();
+    }
     function appendRuby(target, base, reading) {
         let rubyBase = String(base || '');
         let rubyReading = String(reading || '').trim();
@@ -777,6 +791,10 @@
         target.replaceChildren();
         let source = String(text || '');
         let resolvedReading = String(reading || '');
+        if (!rubyEnabled) {
+            target.textContent = source.replace(/[()（）]/g, '');
+            return;
+        }
 
         // A final kana-only parenthesis is a whole-word reading, e.g. 憧れる(あこがれる).
         const trailingReading = source.match(/[（(]([ぁ-ゖァ-ヺー・/／、]+)[）)]$/);
@@ -2393,6 +2411,7 @@
 
     // 초기 실행: SRS 필드를 포함해 자동 저장하고 오늘 복습 대상만 카드 큐에 올립니다.
     saveStorage();
+    updateRubyToggle();
     filterWords();
     renderVocabList();
 

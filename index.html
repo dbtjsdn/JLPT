@@ -1894,7 +1894,8 @@
         const inScope = selectedLevel === "ALL" ? [...allWords] : allWords.filter(item => item.level === selectedLevel);
         scopeWordCount = inScope.length;
         filteredWords = inScope.filter(item => isSrsDue('vocab', item));
-        studyQueue = filteredWords.map(item => ({ item, kind: 'new' }));
+        // 카드도 전체 범위에서 급수·분류가 번갈아 나오도록 순환 배치합니다.
+        studyQueue = buildBalancedQuizDeck(filteredWords).map(item => ({ item, kind: 'new' }));
         currentIndex = 0;
         sessionNewTotal = filteredWords.length;
         knownWords = new Set();

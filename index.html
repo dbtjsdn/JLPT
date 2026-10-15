@@ -792,7 +792,9 @@
         let source = String(text || '');
         let resolvedReading = String(reading || '');
         if (!rubyEnabled) {
-            target.textContent = source.replace(/[()（）]/g, '');
+            // 괄호만 지우면 本ほん·食たべる처럼 읽기가 남으므로
+            // 괄호 안의 후리가나 전체를 제거합니다.
+            target.textContent = source.replace(/[（(][ぁ-ゖァ-ヺー・/／、]+[）)]/g, '');
             return;
         }
 

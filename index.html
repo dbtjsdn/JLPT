@@ -868,8 +868,11 @@
         const japaneseVoices = window.speechSynthesis.getVoices()
             .filter(voice => voice.lang && voice.lang.toLowerCase().startsWith('ja'));
         const preferredVoiceNames = [
-            /google.*日本語/i, /japanese/i, /日本語/i,
-            /nanami|keita|naoki|haruka|ayumi|kyoko|otoya|mizuki/i
+            // Apple 일본어 남성 음성을 먼저 시도합니다.
+            /otoya|hattori|keita|naoki|hiroshi|male/i,
+            /google.*日本語/i, /japanese/i,
+            /日本語/i,
+            /nanami|haruka|ayumi|kyoko|mizuki|female/i
         ];
         const japaneseVoice = preferredVoiceNames.reduce((selected, pattern) =>
             selected || japaneseVoices.find(voice => pattern.test(voice.name)), null)

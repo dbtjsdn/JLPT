@@ -154,14 +154,8 @@
             border-radius: 10px;
             cursor: pointer;
         }
-        .btn-unknown {
-            background-color: #ff3b30;
-            color: white;
-        }
-        .btn-known {
-            background-color: #34c759;
-            color: white;
-        }
+        .btn-unknown { background-color: #ff3b30; color: white; }
+        .btn-known { background-color: #34c759; color: white; }
         .btn-group button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -358,6 +352,15 @@
         .quiz-panel { margin-top: 14px; }
         .quiz-question-card { padding: 18px; border: 1px solid #e2e8f0; border-radius: 14px; background: #f8fafc; text-align: center; }
         .quiz-question { margin: 10px 0 16px; font-size: 22px; font-weight: 750; word-break: break-word; }
+        .four-stage-panel { margin-top: 14px; }
+        .four-stage-meaning { margin: 12px 0; padding: 14px; border-radius: 10px; background: #f2f2f7; font-size: 18px; font-weight: 600; }
+        .four-stage-ratings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+        .four-stage-ratings button { border: 0; border-radius: 10px; padding: 12px; color: #fff; font-weight: 700; cursor: pointer; }
+        .four-stage-ratings button:disabled { opacity: .5; cursor: not-allowed; }
+        .rating-again { background: #ff3b30; }
+        .rating-hard { background: #ff9500; }
+        .rating-good { background: #34c759; }
+        .rating-easy { background: #007aff; }
         .quiz-options { display: flex; flex-direction: column; gap: 8px; }
         .quiz-opt-btn { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; background: white; color: #1e293b; font-size: 14px; text-align: left; cursor: pointer; }
         .quiz-opt-btn:hover:not(:disabled) { background: #f1f5f9; }
@@ -582,16 +585,21 @@
     <section id="quiz-tab" class="tab-content">
         <h2>어휘 퀴즈</h2>
         <div class="control-group">
+            <label for="quizMode">퀴즈 방식</label>
+            <select id="quizMode" class="level-select">
+                <option value="CHOICE">기존 객관식 퀴즈</option>
+                <option value="FOUR_STAGE">망각곡선 4단계 평가</option>
+            </select>
             <label for="quizLevel">퀴즈 범위</label>
             <select id="quizLevel" class="level-select">
-                <option value="ALL">전체 어휘</option><option value="N5">JLPT N5</option><option value="N4">JLPT N4</option><option value="N3">JLPT N3</option><option value="N2">JLPT N2</option><option value="N1">JLPT N1</option><option value="BASIC">필수 어휘</option><option value="KANJI">한자 2136</option>
+                <option value="ALL">전체 어휘</option><option value="DUE">오늘 복습(전체 급수)</option><option value="N5">JLPT N5</option><option value="N4">JLPT N4</option><option value="N3">JLPT N3</option><option value="N2">JLPT N2</option><option value="N1">JLPT N1</option><option value="BASIC">필수 어휘</option><option value="KANJI">한자 2136</option>
             <option value="POLITICS">정치용어</option><option value="DISASTER">재난용어</option></select>
         </div>
-        <p class="quiz-note">복습 시기가 된 단어만 출제되며, 틀린 문제는 회차 끝에 다시 나옵니다.</p>
+        <p class="quiz-note">객관식(정답/오답)과 망각곡선 4단계 평가 중 선택할 수 있습니다. 전체 어휘는 모든 분류를 골고루 섞어 출제하고, 오늘 복습은 복습 시기가 된 단어만 출제합니다.</p>
         <button class="btn" type="button" onclick="startQuiz()">어휘 퀴즈 시작</button>
         <div id="quizPanel" class="quiz-panel" hidden>
             <div id="quizProgress" class="quiz-progress"></div>
-            <div class="quiz-question-card"><div class="quiz-meta"><span id="quizLevelBadge" class="quiz-level-badge"></span><span id="quizSrsBadge" class="quiz-srs-badge"></span></div><div id="quizQuestion" class="quiz-question"></div><button id="quizTtsButton" class="tts-button" type="button" onclick="speakItem(quizCurrent)">🔊 발음 듣기</button><div id="quizOptions" class="quiz-options"></div><div id="quizFeedback" class="quiz-feedback" role="status"></div></div>
+            <div class="quiz-question-card"><div class="quiz-meta"><span id="quizLevelBadge" class="quiz-level-badge"></span><span id="quizSrsBadge" class="quiz-srs-badge"></span></div><div id="quizQuestion" class="quiz-question"></div><button id="quizTtsButton" class="tts-button" type="button" onclick="speakItem(quizCurrent)">🔊 발음 듣기</button><div id="quizOptions" class="quiz-options"></div><div id="fourStageControls" class="four-stage-panel" hidden><button id="fourStageReveal" class="btn" type="button" onclick="revealFourStageMeaning()">뜻 확인하기</button><div id="fourStageMeaning" class="four-stage-meaning" hidden></div><div id="fourStageRatings" class="four-stage-ratings" hidden><button type="button" class="rating-again" data-rating="AGAIN">다시</button><button type="button" class="rating-hard" data-rating="HARD">어려움</button><button type="button" class="rating-good" data-rating="GOOD">기억함</button><button type="button" class="rating-easy" data-rating="EASY">쉬움</button></div></div><div id="quizFeedback" class="quiz-feedback" role="status"></div></div>
             <button id="quizNext" class="btn quiz-next" type="button" onclick="nextQuizQuestion()" hidden>다음 문제</button>
         </div>
     </section>
@@ -635,7 +643,7 @@
                 <div class="quiz-question-card">
                     <div id="grammarQuizCategoryBadge" class="grammar-category"></div>
                     <div id="grammarQuizQuestion" class="quiz-question"></div>
-                    <button id="grammarQuizTtsButton" class="tts-button" type="button" onclick="speakJapanese(grammarCurrent?.expression || '')">🔊 발음 듣기</button>
+                    <button id="grammarQuizTtsButton" class="tts-button" type="button" onclick="speakJapanese(grammarCurrent?.expression || '', grammarCurrent?.reading || '')">🔊 발음 듣기</button>
                     <div id="grammarQuizOptions" class="quiz-options"></div>
                     <div id="grammarQuizFeedback" class="quiz-feedback" role="status" aria-live="polite"></div>
                 </div>
@@ -871,15 +879,13 @@
         if (remaining) target.appendChild(document.createTextNode(remaining));
     }
 
-    function speakJapanese(text) {
+    function speakJapanese(text, reading = '') {
         if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) {
             alert('이 브라우저에서는 일본어 음성을 지원하지 않습니다. Chrome 또는 Safari를 사용해 주세요.');
             return;
         }
-        const raw = String(text || '').trim();
-        if (!raw) return;
-        const match = raw.match(/\(([^()]*)\)/);
-        const spoken = (match && /[ぁ-ゖァ-ヺー]/.test(match[1])) ? match[1] : raw.replace(/\([^()]*\)/g, '');
+        const spoken = resolveJapaneseSpeechText(text, reading);
+        if (!spoken) return;
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(spoken);
         utterance.lang = 'ja-JP';
@@ -907,7 +913,7 @@
     }
 
     function speakItem(item) {
-        if (item) speakJapanese(item.word || item.expression || item.question || '');
+        if (item) speakJapanese(item.word || item.expression || item.question || '', item.reading || '');
     }
 
     function renderWord(target, item) {
@@ -988,9 +994,120 @@
     const n5GrammarRules = [{"level":"N5","expression":"あの～","meaning":"저~","sections":["형식 판단"]},{"level":"N5","expression":"あまり","meaning":"별로 ~지 않다","sections":["형식 판단"]},{"level":"N5","expression":"～か","meaning":"인가(불특정)","sections":["형식 판단"]},{"level":"N5","expression":"～か","meaning":"이나(불확정)","sections":["형식 판단"]},{"level":"N5","expression":"～が","meaning":"이, ~가(주격 조사)","sections":["형식 판단"]},{"level":"N5","expression":"～が","meaning":"지만(역접 조사)","sections":["형식 판단"]},{"level":"N5","expression":"～がた","meaning":"분(존칭)","sections":["형식 판단"]},{"level":"N5","expression":"～が","meaning":"을 좋아하다","sections":["형식 판단"]},{"level":"N5","expression":"～が","meaning":"을 갖고 싶다","sections":["형식 판단"]},{"level":"N5","expression":"～から","meaning":"이기 때문에, ~하므로(이유)","sections":["형식 판단"]},{"level":"N5","expression":"～から","meaning":"에서, ~로부터(기점)","sections":["형식 판단"]},{"level":"N5","expression":"～から","meaning":"에게서, ~한테서(출처)","sections":["형식 판단"]},{"level":"N5","expression":"～く","meaning":"하게 하다(","sections":["형식 판단"]},{"level":"N5","expression":"～く","meaning":"지 않다(","sections":["형식 판단"]},{"level":"N5","expression":"～く","meaning":"지 않았다(","sections":["형식 판단"]},{"level":"N5","expression":"～く","meaning":"해지다, ~하게 되다(","sections":["형식 판단"]},{"level":"N5","expression":"～くらい","meaning":"정도, ~쯤","sections":["형식 판단"]},{"level":"N5","expression":"～ぐらい","meaning":"정도, ~쯤(～","sections":["형식 판단"]},{"level":"N5","expression":"～ごろ","meaning":"쯤, ~경","sections":["형식 판단"]},{"level":"N5","expression":"～しか","meaning":"밖에(뒤에는 부정 표현이 옴)","sections":["형식 판단"]},{"level":"N5","expression":"じぶんで","meaning":"자기 스스로, 자신이 직접","sections":["형식 판단"]},{"level":"N5","expression":"～じゅう","meaning":"내내","sections":["형식 판단"]},{"level":"N5","expression":"(","meaning":"동사 과거) ～","sections":["형식 판단"]},{"level":"N5","expression":"(","meaning":"동사","sections":["형식 판단"]},{"level":"N5","expression":"～だけ","meaning":"만 (한정)","sections":["형식 판단"]},{"level":"N5","expression":"～たり～たり","meaning":"하거나 ~하거나 하다","sections":["형식 판단"]},{"level":"N5","expression":"～で","meaning":"으)로 (계기)","sections":["형식 판단"]},{"level":"N5","expression":"～で","meaning":"때문에 (원인)","sections":["형식 판단"]},{"level":"N5","expression":"～で","meaning":"으)로 (수단, 방법)","sections":["형식 판단"]},{"level":"N5","expression":"～で","meaning":"에서(장소)","sections":["형식 판단"]},{"level":"N5","expression":"～で","meaning":"에(수량)","sections":["형식 판단"]},{"level":"N5","expression":"～で","meaning":"이고(열거)","sections":["형식 판단"]},{"level":"N5","expression":"～てから","meaning":"하고 나서","sections":["형식 판단"]},{"level":"N5","expression":"～て","meaning":"해 주세요","sections":["형식 판단"]},{"level":"N5","expression":"(ナ","meaning":"형용사의 과거 부정)","sections":["형식 판단"]},{"level":"N5","expression":"～と","meaning":"와, ~과","sections":["형식 판단"]},{"level":"N5","expression":"～という","meaning":"라고 하는","sections":["형식 판단"]},{"level":"N5","expression":"どの～","meaning":"어느","sections":["형식 판단"]},{"level":"N5","expression":"どんな～","meaning":"어떤(연체사)","sections":["형식 판단"]},{"level":"N5","expression":"～ないで","meaning":"하지 않고","sections":["형식 판단"]},{"level":"N5","expression":"～ないで","meaning":"하지 말아 주세요","sections":["형식 판단"]},{"level":"N5","expression":"～ながら","meaning":"하면서","sections":["형식 판단"]},{"level":"N5","expression":"～など","meaning":"등, ~따위(열거)","sections":["형식 판단"]},{"level":"N5","expression":"～に","meaning":"에(위치 장소)","sections":["형식 판단"]},{"level":"N5","expression":"～に","meaning":"에(시간, 시점)","sections":["형식 판단"]},{"level":"N5","expression":"～に","meaning":"에(시간 또는 기간의 범위)","sections":["형식 판단"]},{"level":"N5","expression":"～に","meaning":"에게(대상)","sections":["형식 판단"]},{"level":"N5","expression":"～に","meaning":"하러(목적)","sections":["형식 판단"]},{"level":"N5","expression":"～に","meaning":"하게 하다(","sections":["형식 판단"]},{"level":"N5","expression":"～に","meaning":"로 하다","sections":["형식 판단"]},{"level":"N5","expression":"～に","meaning":"이 되다","sections":["형식 판단"]},{"level":"N5","expression":"～に","meaning":"을(를) 만나다","sections":["형식 판단"]},{"level":"N5","expression":"～に","meaning":"을(를) 타다(승차하다)","sections":["형식 판단"]},{"level":"N5","expression":"～にも","meaning":"에도(장소)","sections":["형식 판단"]},{"level":"N5","expression":"～の","meaning":"것(물건)","sections":["형식 판단"]},{"level":"N5","expression":"～の","meaning":"의 것","sections":["형식 판단"]},{"level":"N5","expression":"～の","meaning":"의(수식)","sections":["형식 판단"]},{"level":"N5","expression":"～は","meaning":"은, ~는(서술어의 주체)","sections":["형식 판단"]},{"level":"N5","expression":"～へ","meaning":"으로, ~에","sections":["형식 판단"]}];
     const allGrammarRules = [...n1GrammarRules, ...n1HackersGrammarRules, ...n2GrammarRules, ...n3GrammarRules, ...n4GrammarRules, ...n5GrammarRules];
 
-    // 복습 단계는 기존 JLPT 급수 문자열(level)과 충돌하지 않도록 srsLevel로 별도 저장합니다.
+    // 지수 망각곡선을 사용하되 목표 회상률은 과도한 재복습을 피하도록 90%로 설정합니다.
+    // 기존 jlpt_universal_srs_v1 키와 단계 데이터를 읽어 진도를 보존하며, 안정성은 구간에서 역산합니다.
     const SRS_INTERVAL_DAYS = [0, 1, 3, 6, 12, 24];
     const SRS_STORAGE_KEY = 'jlpt_universal_srs_v1';
+    const SRS_TARGET_RETENTION = 0.90;
+    const SRS_RETENTION_DECAY = -Math.log(SRS_TARGET_RETENTION);
+    const SRS_MIN_INTERVAL_DAYS = 10 / 1440; // 다시(AGAIN)는 10분 뒤
+    const SRS_MAX_INTERVAL_DAYS = 365;
+    const SRS_INITIAL_STABILITY_DAYS = 4.75; // GOOD 첫 응답의 다음 복습이 약 1일이 되도록 보정
+    const SRS_DAY_MS = 24 * 60 * 60 * 1000;
+    const SRS_RATINGS = ['AGAIN', 'HARD', 'GOOD', 'EASY'];
+
+    function normalizeSrsRating(rating) {
+        if (typeof rating === 'boolean') return rating ? 'GOOD' : 'AGAIN';
+        const value = String(rating || '').toUpperCase();
+        return SRS_RATINGS.includes(value) ? value : 'AGAIN';
+    }
+
+    function clampSrsNumber(value, min, max, fallback) {
+        const number = Number(value);
+        return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
+    }
+
+    function resolveJapaneseSpeechText(text, reading = '') {
+        const raw = String(text || '').trim();
+        const explicit = String(reading || '').trim();
+        const hasKana = value => /[ぁ-ゖァ-ヺー]/.test(value);
+        if (explicit && hasKana(explicit) && !/[~～〜]/.test(explicit)) {
+            return explicit.replace(/[\/／]+/g, '、').replace(/\s+/g, '、').trim();
+        }
+        const fullRuby = raw.match(/^.*[一-龯々〆ヶヵ].*[（(]([ぁ-ゖァ-ヺー・]+)[）)]\s*$/u);
+        if (fullRuby) return fullRuby[1].replace(/[\/／]+/g, '、').trim();
+        return raw
+            .replace(/([一-龯々〆ヶヵ]+)[（(]([ぁ-ゖァ-ヺー・]+)[）)]/gu, '$2')
+            .replace(/[（(]([^()（）]*)[）)]/g, '$1')
+            .replace(/[~～〜]/g, '')
+            .replace(/[\/／]+/g, '、')
+            .trim();
+    }
+
+    class EbbinghausMemoryEngine {
+        calculateRetention(elapsedDays, stability) {
+            const elapsed = clampSrsNumber(elapsedDays, 0, SRS_MAX_INTERVAL_DAYS * 10, 0);
+            const stable = clampSrsNumber(stability, 0.05, SRS_MAX_INTERVAL_DAYS * 10, SRS_INITIAL_STABILITY_DAYS);
+            return Math.max(0, Math.min(1, Math.exp(-elapsed / stable)));
+        }
+
+        processReview(previous, rating, now = Date.now()) {
+            const grade = normalizeSrsRating(rating);
+            const lastReviewedMs = Date.parse(previous.lastReviewed || '');
+            const hasHistory = Number.isFinite(lastReviewedMs);
+            const elapsedDays = hasHistory ? Math.max(0, (now - lastReviewedMs) / SRS_DAY_MS) : 0;
+            const oldStability = clampSrsNumber(previous.stability, 0.05, SRS_MAX_INTERVAL_DAYS * 10,
+                clampSrsNumber(previous.intervalDays, 0, SRS_MAX_INTERVAL_DAYS, 0) > 0
+                    ? Number(previous.intervalDays) / SRS_RETENTION_DECAY
+                    : SRS_INITIAL_STABILITY_DAYS);
+            const retentionBeforeReview = hasHistory ? this.calculateRetention(elapsedDays, oldStability) : 1;
+            let reps = Math.max(0, Math.floor(clampSrsNumber(previous.reps ?? previous.srsLevel, 0, 100000, 0)));
+            let lapseCount = Math.max(0, Math.floor(clampSrsNumber(previous.lapseCount, 0, 100000, 0)));
+            let easeFactor = clampSrsNumber(previous.easeFactor, 1.3, 2.6, 2.0);
+            let stability = oldStability;
+            let intervalDays;
+
+            switch (grade) {
+                case 'AGAIN':
+                    reps = 0;
+                    lapseCount += 1;
+                    easeFactor = Math.max(1.3, easeFactor - 0.2);
+                    stability = 0.1;
+                    intervalDays = SRS_MIN_INTERVAL_DAYS;
+                    break;
+                case 'HARD': {
+                    easeFactor = Math.max(1.3, easeFactor - 0.08);
+                    const delayFactor = Math.min(1.2, Math.max(1, elapsedDays / oldStability));
+                    stability = Math.max(oldStability * 1.1 * delayFactor, elapsedDays * 1.05, 0.1);
+                    reps += 1;
+                    intervalDays = stability * SRS_RETENTION_DECAY;
+                    break;
+                }
+                case 'GOOD': {
+                    const delayFactor = Math.min(1.2, Math.max(1, elapsedDays / oldStability));
+                    stability = Math.max(oldStability * easeFactor * delayFactor, elapsedDays * 1.05, 0.1);
+                    easeFactor = Math.min(2.6, easeFactor + 0.02);
+                    reps += 1;
+                    intervalDays = stability * SRS_RETENTION_DECAY;
+                    break;
+                }
+                case 'EASY': {
+                    easeFactor = Math.min(2.6, easeFactor + 0.1);
+                    const delayFactor = Math.min(1.2, Math.max(1, elapsedDays / oldStability));
+                    stability = Math.max(oldStability * easeFactor * 1.3 * delayFactor, elapsedDays * 1.3, 0.1);
+                    reps += 1;
+                    intervalDays = stability * SRS_RETENTION_DECAY;
+                    break;
+                }
+            }
+
+            stability = clampSrsNumber(stability, 0.05, SRS_MAX_INTERVAL_DAYS * 10, SRS_INITIAL_STABILITY_DAYS);
+            intervalDays = clampSrsNumber(intervalDays, SRS_MIN_INTERVAL_DAYS, SRS_MAX_INTERVAL_DAYS, SRS_MIN_INTERVAL_DAYS);
+            return {
+                srsLevel: Math.min(5, reps),
+                reps,
+                lapseCount,
+                easeFactor: Number(easeFactor.toFixed(2)),
+                stability: Number(stability.toFixed(4)),
+                intervalDays: Number(intervalDays.toFixed(6)),
+                currentRetention: Number((retentionBeforeReview * 100).toFixed(2)),
+                lastRating: grade
+            };
+        }
+    }
+
+    const EBBINGHAUS_SRS = new EbbinghausMemoryEngine();
+
     function loadSrsProgress() {
         try {
             const saved = JSON.parse(localStorage.getItem(SRS_STORAGE_KEY) || '{}');
@@ -1009,13 +1126,31 @@
     }
 
     function getSrsStatus(type, item) {
-        const key = srsKey(type, item);
-        const saved = srsProgress[key] || {};
-        const srsLevel = Math.max(0, Math.min(5, Math.floor(Number(saved.srsLevel ?? item.srsLevel ?? 0) || 0)));
-        const intervalDays = Math.max(0, Math.floor(Number(saved.intervalDays ?? item.intervalDays ?? SRS_INTERVAL_DAYS[srsLevel]) || 0));
+        const raw = srsProgress[srsKey(type, item)];
+        const saved = raw && typeof raw === 'object' ? raw : {};
+        const srsLevel = Math.floor(clampSrsNumber(saved.srsLevel ?? item.srsLevel, 0, 5, 0));
+        const intervalCandidate = Number(saved.intervalDays ?? item.intervalDays ?? SRS_INTERVAL_DAYS[srsLevel]);
+        const intervalDays = Number.isFinite(intervalCandidate)
+            ? clampSrsNumber(intervalCandidate, 0, SRS_MAX_INTERVAL_DAYS, 0)
+            : SRS_INTERVAL_DAYS[srsLevel];
+        const stabilityCandidate = Number(saved.stability);
+        const stability = Number.isFinite(stabilityCandidate) && stabilityCandidate > 0
+            ? clampSrsNumber(stabilityCandidate, 0.05, SRS_MAX_INTERVAL_DAYS * 10, SRS_INITIAL_STABILITY_DAYS)
+            : intervalDays > 0 ? intervalDays / SRS_RETENTION_DECAY : SRS_INITIAL_STABILITY_DAYS;
         const candidate = saved.nextReview || item.nextReview || new Date().toISOString();
         const parsed = Date.parse(candidate);
-        return { srsLevel, intervalDays, nextReview: Number.isFinite(parsed) ? new Date(parsed).toISOString() : new Date().toISOString() };
+        const lastReviewedCandidate = saved.lastReviewed || item.lastReviewed || null;
+        const lastReviewedMs = Date.parse(lastReviewedCandidate || '');
+        return {
+            srsLevel,
+            reps: Math.floor(clampSrsNumber(saved.reps ?? saved.srsLevel ?? item.srsLevel, 0, 100000, srsLevel)),
+            lapseCount: Math.floor(clampSrsNumber(saved.lapseCount, 0, 100000, 0)),
+            easeFactor: clampSrsNumber(saved.easeFactor, 1.3, 2.6, 2.0),
+            stability,
+            intervalDays,
+            nextReview: Number.isFinite(parsed) ? new Date(parsed).toISOString() : new Date().toISOString(),
+            lastReviewed: Number.isFinite(lastReviewedMs) ? new Date(lastReviewedMs).toISOString() : null
+        };
     }
 
     function isSrsDue(type, item, now = Date.now()) {
@@ -1024,11 +1159,24 @@
         return Date.parse(getSrsStatus(type, item).nextReview) <= now;
     }
 
+    function formatSrsInterval(days) {
+        const value = clampSrsNumber(days, 0, SRS_MAX_INTERVAL_DAYS, 0);
+        if (value <= 0) return '첫 복습 전';
+        if (value < 1 / 24) return `${Math.max(1, Math.round(value * 1440))}분`;
+        if (value < 1) return `${Math.max(1, Math.round(value * 24))}시간`;
+        return `${value < 2 ? value.toFixed(1) : Math.round(value)}일`;
+    }
+
     function formatSrsStatus(type, item) {
         const status = getSrsStatus(type, item);
-        const due = Date.parse(status.nextReview) <= Date.now();
+        const now = Date.now();
+        const due = Date.parse(status.nextReview) <= now;
         const dueDate = new Date(status.nextReview).toLocaleDateString('ko-KR');
-        return `복습 ${status.srsLevel}/5 · 간격 ${status.intervalDays}일 · ${due ? '오늘 복습' : `${dueDate} 예정`}`;
+        const lastReviewedMs = Date.parse(status.lastReviewed || '');
+        const retention = Number.isFinite(lastReviewedMs)
+            ? EBBINGHAUS_SRS.calculateRetention(Math.max(0, (now - lastReviewedMs) / SRS_DAY_MS), status.stability)
+            : 1;
+        return `복습 ${status.srsLevel}/5 · 간격 ${formatSrsInterval(status.intervalDays)} · 예상 기억률 ${Math.round(retention * 100)}% · ${due ? '오늘 복습' : `${dueDate} 예정`}`;
     }
 
     function saveSrsProgress() {
@@ -1041,19 +1189,17 @@
         }
     }
 
-    function recordSrsAnswer(type, item, remembered) {
+    function recordSrsAnswer(type, item, rating) {
         const previous = getSrsStatus(type, item);
-        const srsLevel = remembered ? Math.min(5, previous.srsLevel + 1) : 0;
-        const intervalDays = remembered ? SRS_INTERVAL_DAYS[srsLevel] : 0;
-        const now = new Date();
-        const nextReview = remembered
-            ? new Date(now.getTime() + intervalDays * 24 * 60 * 60 * 1000).toISOString()
-            : now.toISOString();
-        const status = { srsLevel, intervalDays, nextReview, lastReviewed: now.toISOString() };
+        const normalizedRating = normalizeSrsRating(rating);
+        const now = Date.now();
+        const updated = EBBINGHAUS_SRS.processReview(previous, normalizedRating, now);
+        const nextReview = new Date(now + updated.intervalDays * SRS_DAY_MS).toISOString();
+        const status = { ...updated, nextReview, lastReviewed: new Date(now).toISOString() };
         srsProgress[srsKey(type, item)] = status;
-        Object.assign(item, { srsLevel, intervalDays, nextReview });
+        Object.assign(item, { srsLevel: status.srsLevel, intervalDays: status.intervalDays, nextReview });
         saveSrsProgress();
-        recordStudyHistory(type, item, remembered);
+        recordStudyHistory(type, item, normalizedRating !== 'AGAIN');
         if (type === 'vocab' && typeof allWords !== 'undefined') saveStorage();
         return status;
     }
@@ -1227,6 +1373,327 @@
         renderStudyHistory();
     }
 
+    const READING_FIXES = {
+"現実離れ\u0001げんじつはなれ": { "reading": "げんじつばなれ" },
+"相も変わらず\u0001そうもかわらず": { "reading": "あいもかわらず" },
+"年頃\u0001ねんごろ": {
+"reading": "としごろ"
+},
+"潤う\u0001じゅんう": {
+"reading": "うるおう"
+},
+"潤す\u0001じゅんす": {
+"reading": "うるおす"
+},
+"滲みる\u0001にじみる": {
+"reading": "しみる"
+},
+"肥やす\u0001こえやす": {
+"reading": "こやす"
+},
+"見目よい\u0001けんもくよい": {
+"reading": "みめよい"
+},
+"疎かだ\u0001うとかだ": {
+"reading": "おろそかだ"
+},
+"仰々しい\u0001ぎょーぎょーしい": {
+"reading": "ぎょうぎょうしい"
+},
+"騒々しい\u0001そーぞーしい": {
+"reading": "そうぞうしい"
+},
+"鮮やかだ\u0001せんやかだ": {
+"reading": "あざやかだ"
+},
+"気掛かり\u0001きかかり": {
+"reading": "きがかり"
+},
+"清らかだ\u0001きよしらかだ": {
+"reading": "きよらかだ"
+},
+"食い止める\u0001くいやめる": {
+"reading": "くいとめる"
+},
+"受け止める\u0001うけやめる": {
+"reading": "うけとめる"
+},
+"呼び止める\u0001よびやめる": {
+"reading": "よびとめる"
+},
+"引き止める\u0001ひきやめる": {
+"reading": "ひきとめる"
+},
+"早急だ/早急だ\u0001さっきゅうだ/さっきゅうだ": {
+"reading": "そうきゅうだ/さっきゅうだ"
+},
+"つかの間\u0001つかのかん": {
+"reading": "つかのま"
+},
+"厳しい\u0001いかめしい": {
+"reading": "きびしい"
+},
+"この上なく\u0001このじょうなく": {
+"reading": "このうえなく"
+},
+"怒ったようだ\u0001いかったようだ": {
+"reading": "おこったようだ"
+},
+"重複/重複\u0001ちょうふく/ちょうふく": {
+"reading": "じゅうふく/ちょうふく"
+},
+"何なりと\u0001なになりと": {
+"reading": "なんなりと"
+},
+"甚だ\u0001じんだ": {
+"reading": "はなはだ"
+},
+")職業観\u0001)しょくぎょうかん": {
+"word": "職業観",
+"reading": "しょくぎょうかん"
+},
+"鮮やかな\u0001せんやかな": {
+"reading": "あざやかな"
+},
+"親子連れ\u0001おやこつれ": {
+"reading": "おやこづれ"
+},
+"一日おき\u0001ついたちおき": {
+"reading": "いちにちおき"
+},
+"ビジネスマン風\u0001びじねすまんかぜ": {
+"reading": "びじねすまんふう"
+},
+"線路沿い\u0001せんろぞいい": {
+"reading": "せんろぞい"
+},
+"期限切れ\u0001きげんぎれれ": {
+"reading": "きげんぎれ"
+},
+"前社長\u0001まえしゃちょう": {
+"reading": "ぜんしゃちょう"
+},
+"真後ろ\u0001まうしろろ": {
+"reading": "まうしろ"
+},
+"ヨーロッパ風\u0001よーろっぱかぜ": {
+"reading": "よーろっぱふう"
+},
+"会社員風\u0001かいしゃいんかぜ": {
+"reading": "かいしゃいんふう"
+},
+"スキー場\u0001すきーば": {
+"reading": "すきーじょう"
+},
+"貴財団\u0001たかしざいだん": {
+"reading": "きざいだん"
+},
+"別れ際\u0001わかれきわ": {
+"reading": "わかれぎわ"
+},
+"前町長\u0001まえまちちょう": {
+"reading": "ぜんちょうちょう"
+},
+"政治色\u0001せいじいろ": {
+"reading": "せいじしょく"
+},
+"諸手続き\u0001もろてつづき": {
+"reading": "しょてつづき"
+},
+"二人連れ\u0001ふたりづれれ": {
+"reading": "ふたりづれ"
+},
+"私宛て\u0001わたしあてて": {
+"reading": "わたしあて"
+},
+"割と\u0001わと": {
+"reading": "わりと"
+},
+"尽きる\u0001ことごときる": {
+"reading": "つきる"
+},
+"小さくなる\u0001ちーさくなる": {
+"reading": "ちいさくなる"
+},
+"お金を払う\u0001おきんをはらう": {
+"reading": "おかねをはらう"
+},
+"体が小さい\u0001からだがちーさい": {
+"reading": "からだがちいさい"
+},
+"触る\u0001ふる": {
+"reading": "さわる"
+},
+"細くなる\u0001こまくなる": {
+"reading": "ほそくなる"
+},
+"同じ会社の人\u0001おなじかいしゃのにん": {
+"reading": "おなじかいしゃのひと"
+},
+"行方\u0001なめがた": {
+"reading": "ゆくえ"
+},
+"経つ\u0001へつ": {
+"reading": "たつ"
+},
+"染み\u0001そみ": {
+"reading": "しみ"
+},
+"すぐ怒る\u0001すぐいかる": {
+"reading": "すぐおこる"
+},
+"次の年\u0001つぎのねん": {
+"reading": "つぎのとし"
+},
+"やり方\u0001やりほう": {
+"reading": "やりかた"
+},
+"後の別の日にやる\u0001のちのべつのにちにやる": {
+"reading": "あとのべつのひにやる"
+},
+"大声で怒る\u0001おおごえでいかる": {
+"reading": "おおごえでおこる"
+},
+"通り過ぎる\u0001とうりすぎる": {
+"reading": "とおりすぎる"
+},
+"倍)\u0001ばい)": {
+"word": "倍",
+"reading": "ばい"
+},
+"通る\u0001とうる": {
+"reading": "とおる"
+},
+"日が\u0001にちが": {
+"reading": "ひが"
+},
+"火よう日\u0001ひようにち": {
+"reading": "かようび"
+},
+"金よう日\u0001きんようにち": {
+"reading": "きんようび"
+},
+"土よう日\u0001つちようにち": {
+"reading": "どようび"
+},
+"木よう日\u0001きようにち": {
+"reading": "もくようび"
+},
+"お金\u0001おきん": {
+"reading": "おかね"
+},
+"小さい\u0001ちーさい": {
+"reading": "ちいさい"
+},
+"日です\u0001にちです": {
+"reading": "いつかです"
+},
+"９時発\u0001じはつ": {
+"reading": "くじはつ"
+},
+"顔写真付き\u0001かおじゃしんつき": {
+"reading": "かおしゃしんつき"
+},
+"懐かし(なつかしい)\u0001": {
+"word": "懐かしい(なつかしい)"
+},
+"圧倒的(あっとくてき)\u0001": {
+"word": "圧倒的(あっとうてき)"
+},
+"阻む(そばむ)\u0001": {
+"word": "阻む(はばむ)"
+},
+"打診(だじん)\u0001": {
+"word": "打診(だしん)"
+},
+"問い合わせる(といわせる)\u0001": {
+"word": "問い合わせる(といあわせる)"
+},
+"真っ先(まっっさき)\u0001": {
+"word": "真っ先(まっさき)"
+},
+"500人に満たない(にんにみたない)\u0001": {
+"word": "500人に満たない(ごひゃくにんにみたない)"
+},
+"行き行き帰り(いき)\u0001": {
+"word": "行き(いき)"
+},
+"~分(にんぶん)\u0001": {
+"word": "~人分(にんぶん)"
+},
+"匂\u0001みおう": {
+"reading": "におう、におい"
+},
+"徒\u0001とどう": {
+"reading": "と / いたずら、あだ"
+},
+"斗\u0001ととう": {
+"reading": "と、とう"
+},
+"痘\u0001とん": {
+"reading": "とう"
+},
+"屯\u0001どん": {
+"reading": "とん / たむろ"
+},
+"陸\u0001りき": {
+"reading": "りく / おか"
+},
+"亜\u0001あが": {
+"reading": "あ"
+},
+"席\u0001ざ / すわる": { "word": "座", "reading": "ざ / すわる" },
+"丘\u0001": {
+"reading": "きゅう / おか",
+"sub": "언덕 구"
+},
+"会心(の出来(かいしんのでき)\u0001": {
+"word": "会心(の出来)(かいしんのでき)"
+},
+"絶大な(人気(ぜつだいなにんき)\u0001": {
+"word": "絶大な(人気)(ぜつだいなにんき)"
+},
+"目先(の利益(めさきのりえき)\u0001": {
+"word": "目先(の利益)(めさきのりえき)"
+},
+"有数(の小麦生産国(ゆうすうのこむぎせいさんこく)\u0001": {
+"word": "有数(の小麦生産国)(ゆうすうのこむぎせいさんこく)"
+},
+"日本維新の会(にほんいしんのかい)\u0001にほんいしんのかい": { "word": "日本維新の会(にっぽんいしんのかい)", "reading": "にっぽんいしんのかい" },
+"法の下の平等(ほうのしたのびょうどう)\u0001ほうのしたのびょうどう": { "word": "法の下の平等(ほうのもとのびょうどう)", "reading": "ほうのもとのびょうどう" },
+"社民党(しみんとう)\u0001しみんとう": { "word": "社民党(しゃみんとう)", "reading": "しゃみんとう" },
+
+// KANJIDIC2 대조로 확인한 한자 표기·읽기 교정
+"仰\u0001ぎょう、こう / おおぐ、おおせ": {"reading": "ぎょう、こう / あおぐ、おおせ"},
+"例\u0001れい / たどえる": {"reading": "れい / たとえる"},
+"冷\u0001れい / つめたい、ひえる、ひや、ひやす、ひやかす、ひめる、さます": {"reading": "れい / つめたい、ひえる、ひや、ひやす、ひやかす、さめる、さます"},
+"凹\u0001おう / ほこ、へこむ、へこます": {"reading": "おう / ぼこ、へこむ、へこます"},
+"到\u0001ちょう / いたる": {"reading": "とう / いたる"},
+"善\u0001せん / よい": {"reading": "ぜん / よい"},
+"導\u0001とう / みちびく": {"reading": "どう / みちびく"},
+"挑\u0001とう / いどむ": {"reading": "ちょう / いどむ"},
+"得\u0001とう、と / える、うる": {"reading": "とく / える、うる"},
+"替\u0001たい / かえる、かわｒ": {"reading": "たい / かえる、かわる"},
+"鈍\u0001とく / にぶい、にぶる": {"reading": "どん / にぶい、にぶる"},
+"頂\u0001ちょう / いただく、いたかき": {"reading": "ちょう / いただく、いただき"},
+"飯\u0001はん / ぬし": {"reading": "はん / めし"},
+"騒\u0001そ / さわぐ、さわがしい": {"reading": "そう / さわぐ、さわがしい"},
+"艶\u0001えん / つや、つややか、あでやか、たまめかしい": {"reading": "えん / つや、つややか、あでやか、なまめかしい"},
+"牙\u0001が、け / きば": {"reading": "が、げ / きば"},
+"幻\u0001けん / まぼろし": {"reading": "げん / まぼろし"},
+"岡\u0001きゅう / おか": {"reading": "こう / おか"},
+"白\u0001はく、びゃく / しる、しら、しろい": {"reading": "はく、びゃく / しろ、しら、しろい"},
+"納\u0001のう、なつ / おさまる、おさめる": {"reading": "のう、なっ / おさまる、おさめる"},
+"漁\u0001ぎょ、きょう": {"reading": "ぎょ、りょう"},
+"藩\u0001はん / まがき": {"reading": "はん"},
+"薄\u0001はく / うすい、うすまる、うすめる、うすらぐ、うすれる、すすき、せまる": {"reading": "はく / うすい、うすまる、うすめる、うすらぐ、うすれる、すすき"},
+"計\u0001けい / はかる、はかろう": {"reading": "けい / はかる、はからう"},
+"耗\u0001もう、こう / へらす、へる": {"reading": "もう、こう"},
+"船\u0001しゅう / ふね、ふな": {"word": "舟", "reading": "しゅう / ふね、ふな"},
+"適\u0001てき / かたき": {"word": "敵", "reading": "てき / かたき"},
+"敵\u0001てき / かなう": {"word": "適", "reading": "てき / かなう"},
+};
+
     // 저장 데이터가 없거나 손상됐거나 형식이 맞지 않으면 기본 단어장을 사용합니다.
     function loadWords() {
         try {
@@ -1248,19 +1715,33 @@
                 '簡潔だ(かんけつ다)': '簡潔だ(かんけつだ)',
                 '賑やかだ(にぎやか다)': '賑やかだ(にぎやかだ)'
             };
+            let srsMigrated = false;
             for (const item of [...defaultWords, ...parsed]) {
-                const normalized = { ...item, word: readingCorrections[item.word] || item.word };
-                const savedSrs = srsProgress[srsKey('vocab', normalized)] || {};
+                const originalKey = srsKey('vocab', item);
+                let normalized = { ...item, word: readingCorrections[item.word] || item.word };
+                const normalizedKey = srsKey('vocab', normalized);
+                const fix = READING_FIXES[normalized.word + '\u0001' + (normalized.reading || '')];
+                if (fix) normalized = { ...normalized, ...fix };
+                const finalKey = srsKey('vocab', normalized);
+                for (const oldKey of new Set([originalKey, normalizedKey])) {
+                    if (oldKey !== finalKey && srsProgress[oldKey] && !srsProgress[finalKey]) {
+                        srsProgress[finalKey] = srsProgress[oldKey];
+                        srsMigrated = true;
+                    }
+                }
+                const savedSrs = srsProgress[finalKey] || {};
+                const level = Math.floor(clampSrsNumber(savedSrs.srsLevel ?? normalized.srsLevel, 0, 5, 0));
+                const rawInterval = Number(savedSrs.intervalDays ?? normalized.intervalDays ?? SRS_INTERVAL_DAYS[level]);
                 const status = {
-                    srsLevel: Math.max(0, Math.min(5, Math.floor(Number(savedSrs.srsLevel ?? normalized.srsLevel ?? 0) || 0))),
-                    intervalDays: Math.max(0, Math.floor(Number(savedSrs.intervalDays ?? normalized.intervalDays ?? 0) || 0)),
+                    srsLevel: level,
+                    intervalDays: Number.isFinite(rawInterval) ? clampSrsNumber(rawInterval, 0, SRS_MAX_INTERVAL_DAYS, 0) : SRS_INTERVAL_DAYS[level],
                     nextReview: savedSrs.nextReview || normalized.nextReview || new Date().toISOString()
                 };
-                const nextTimestamp = Date.parse(status.nextReview);
-                if (!Number.isFinite(nextTimestamp)) status.nextReview = new Date().toISOString();
+                if (!Number.isFinite(Date.parse(status.nextReview))) status.nextReview = new Date().toISOString();
                 Object.assign(normalized, status);
                 merged.set(JSON.stringify([normalized.level, normalized.word, normalized.sub]), normalized);
             }
+            if (srsMigrated) saveSrsProgress();
             return [...merged.values()];
         } catch (error) {
             console.warn('저장된 단어장을 불러오지 못해 기본 단어장을 사용합니다.', error);
@@ -1450,8 +1931,7 @@
             srsStatusDisplay.textContent = "";
             cardHint.innerText = "";
             progressText.innerText = "학습할 단어가 없습니다";
-            unknownButton.disabled = true;
-            knownButton.disabled = true;
+            [unknownButton, knownButton].forEach(button => { if (button) button.disabled = true; });
             return;
         }
 
@@ -1464,13 +1944,11 @@
             cardEl.classList.add('show');
             progressText.innerText = `오늘의 복습 완료 · 외운 단어 ${knownWords.size} · 다시 본 횟수 ${reviewSeen}`;
             restartWrongButton.hidden = true;
-            unknownButton.disabled = true;
-            knownButton.disabled = true;
+            [unknownButton, knownButton].forEach(button => { if (button) button.disabled = true; });
             return;
         }
 
-        unknownButton.disabled = false;
-        knownButton.disabled = false;
+        [unknownButton, knownButton].forEach(button => { if (button) button.disabled = false; });
         const entry = studyQueue[currentIndex];
         const currentItem = entry.item;
         currentCardItem = currentItem;
@@ -1500,8 +1978,10 @@
         }
     }
 
-    function nextCard(known) {
+    function nextCard(rating) {
         if (filteredWords.length === 0 || currentIndex >= studyQueue.length) return;
+        const normalizedRating = normalizeSrsRating(rating);
+        const known = normalizedRating !== 'AGAIN';
         const entry = studyQueue[currentIndex];
         const item = entry.item;
         lastCardAction = {
@@ -1521,7 +2001,7 @@
         else reviewSeen++;
 
         if (!known) recordAgainClick(item);
-        recordSrsAnswer('vocab', item, known);
+        recordSrsAnswer('vocab', item, normalizedRating);
         if (known) {
             knownWords.add(item);
             needsReview.delete(item);
@@ -2122,30 +2602,88 @@
         return result;
     }
 
+
+    function buildBalancedQuizDeck(items) {
+        const groups = new Map();
+        for (const item of items) {
+            const level = item.level || 'OTHER';
+            if (!groups.has(level)) groups.set(level, []);
+            groups.get(level).push(item);
+        }
+        const queues = shuffleArray([...groups.entries()]).map(([level, group]) => ({ level, items: shuffleArray(group), index: 0 }));
+        const deck = [];
+        let remaining = items.length;
+        while (remaining > 0) {
+            for (const queue of queues) {
+                if (queue.index < queue.items.length) {
+                    deck.push(queue.items[queue.index++]);
+                    remaining--;
+                }
+            }
+        }
+        return deck;
+    }
+
+    function pickQuizDistractors(correct, count = 3) {
+        const pool = quizMeaningPool;
+        const selected = new Set();
+        let attempts = 0;
+        while (selected.size < count && attempts < pool.length * 3) {
+            const candidate = pool[Math.floor(Math.random() * pool.length)];
+            if (candidate && candidate !== correct) selected.add(candidate);
+            attempts++;
+        }
+        if (selected.size < count) {
+            for (const candidate of pool) {
+                if (candidate && candidate !== correct) selected.add(candidate);
+                if (selected.size >= count) break;
+            }
+        }
+        return [...selected].slice(0, count);
+    }
+
     let quizDeck = [];
     let quizIndex = 0;
     let quizScore = 0;
     let quizCurrent = null;
     let quizAnswered = false;
+    let quizAllWordsMode = false;
+    let quizWrongItems = [];
+    let quizPrimaryLength = 0;
+    let quizRetryAdded = false;
+    let quizMeaningPool = [];
+    let quizRecallMode = false;
+    let quizRecallRatings = { AGAIN: 0, HARD: 0, GOOD: 0, EASY: 0 };
 
     function startQuiz() {
         const level = document.getElementById('quizLevel').value;
-        const inScope = allWords.filter(item => level === 'ALL' || item.level === level);
-        const pool = inScope.filter(item => isSrsDue('vocab', item));
+        quizRecallMode = document.getElementById('quizMode').value === 'FOUR_STAGE';
+        quizAllWordsMode = level === 'ALL';
+        const inScope = allWords.filter(item => level === 'ALL' || level === 'DUE' || item.level === level);
+        const pool = quizAllWordsMode ? inScope : inScope.filter(item => isSrsDue('vocab', item));
+        quizWrongItems = [];
+        quizRetryAdded = false;
+        quizRecallRatings = { AGAIN: 0, HARD: 0, GOOD: 0, EASY: 0 };
+        quizMeaningPool = [...new Set(allWords.map(item => item.sub).filter(Boolean))];
         if (!pool.length) {
+            const dueMode = !quizAllWordsMode;
+            document.getElementById('fourStageControls').hidden = true;
+            document.getElementById('quizOptions').hidden = false;
             document.getElementById('quizPanel').hidden = false;
             document.getElementById('quizQuestion').textContent = inScope.length ? '오늘의 복습 완료!' : '선택한 범위에 단어가 없습니다.';
             document.getElementById('quizLevelBadge').textContent = '';
             document.getElementById('quizSrsBadge').textContent = '';
             document.getElementById('quizOptions').replaceChildren();
-            document.getElementById('quizFeedback').textContent = inScope.length ? '오늘 복습할 어휘가 없습니다.' : '다른 급수를 선택하거나 단어를 추가해 주세요.';
-            document.getElementById('quizProgress').textContent = '오늘의 어휘 복습';
+            document.getElementById('quizFeedback').textContent = dueMode && inScope.length ? '오늘 복습할 어휘가 없습니다.' : '다른 급수를 선택하거나 단어를 추가해 주세요.';
+            document.getElementById('quizProgress').textContent = quizAllWordsMode ? '전체 어휘 퀴즈' : '오늘의 어휘 복습';
             document.getElementById('quizNext').hidden = true;
             return;
         }
-        quizDeck = shuffleArray(pool);
+        quizDeck = (level === 'ALL' || level === 'DUE') ? buildBalancedQuizDeck(pool) : shuffleArray(pool);
+        quizPrimaryLength = quizDeck.length;
         quizIndex = 0;
         quizScore = 0;
+        quizAnswered = false;
         document.getElementById('quizPanel').hidden = false;
         showQuizQuestion();
     }
@@ -2156,12 +2694,16 @@
         const feedback = document.getElementById('quizFeedback');
         const next = document.getElementById('quizNext');
         if (quizIndex >= quizDeck.length) {
-            question.textContent = '오늘의 복습 완료!';
+            document.getElementById('fourStageControls').hidden = true;
+            optionsBox.hidden = false;
+            question.textContent = quizAllWordsMode ? '전체 어휘 퀴즈 완료!' : '어휘 복습 퀴즈 완료!';
             document.getElementById('quizLevelBadge').textContent = '';
             document.getElementById('quizSrsBadge').textContent = '';
             optionsBox.replaceChildren();
-            feedback.textContent = `${quizDeck.length}문제 중 ${quizScore}문제 정답 · 정답률 ${Math.round(quizScore / quizDeck.length * 100)}%`;
-            document.getElementById('quizProgress').textContent = '이번 어휘 퀴즈 결과';
+            feedback.textContent = quizRecallMode
+                ? `${quizDeck.length}문항 평가 완료 · 다시 ${quizRecallRatings.AGAIN} · 어려움 ${quizRecallRatings.HARD} · 기억함 ${quizRecallRatings.GOOD} · 쉬움 ${quizRecallRatings.EASY}`
+                : `${quizDeck.length}문제 중 ${quizScore}문제 정답 · 정답률 ${Math.round(quizScore / quizDeck.length * 100)}%${quizWrongItems.length ? ` · 오답 ${quizWrongItems.length}개는 복습 대상으로 남았습니다.` : ''}`;
+            document.getElementById('quizProgress').textContent = quizAllWordsMode ? '전체 어휘 퀴즈 결과' : '이번 어휘 퀴즈 결과';
             next.hidden = true;
             return;
         }
@@ -2169,9 +2711,8 @@
         quizAnswered = false;
         document.getElementById('quizLevelBadge').textContent = levelLabel(quizCurrent.level);
         const quizSrs = getSrsStatus('vocab', quizCurrent);
-        document.getElementById('quizSrsBadge').textContent = `복습 ${quizSrs.srsLevel}/5 · ${quizSrs.intervalDays}일 간격`;
-        const distractors = [...new Set(allWords.filter(item => item.sub && item.sub !== quizCurrent.sub).map(item => item.sub))];
-        const answers = shuffleArray([quizCurrent.sub, ...shuffleArray(distractors).slice(0, 3)]);
+        document.getElementById('quizSrsBadge').textContent = `복습 ${quizSrs.srsLevel}/5 · ${formatSrsInterval(quizSrs.intervalDays)} 간격`;
+        const answers = shuffleArray([quizCurrent.sub, ...pickQuizDistractors(quizCurrent.sub, 3)]);
         quizCurrentOptions = answers;
         renderWord(question, quizCurrent);
         const quizTtsButton = document.getElementById("quizTtsButton");
@@ -2179,7 +2720,23 @@
         optionsBox.replaceChildren();
         feedback.textContent = '';
         next.hidden = true;
-        document.getElementById('quizProgress').textContent = `문제 ${quizIndex + 1} / ${quizDeck.length} · 정답 ${quizScore}`;
+        document.getElementById('quizProgress').textContent = quizRecallMode
+            ? `문제 ${quizIndex + 1} / ${quizDeck.length} · 4단계 평가`
+            : `문제 ${quizIndex + 1} / ${quizDeck.length} · 정답 ${quizScore}`;
+        const fourStageControls = document.getElementById('fourStageControls');
+        if (quizRecallMode) {
+            optionsBox.hidden = true;
+            fourStageControls.hidden = false;
+            document.getElementById('fourStageMeaning').hidden = true;
+            document.getElementById('fourStageMeaning').textContent = quizCurrent.sub || '';
+            document.getElementById('fourStageReveal').hidden = false;
+            const ratings = document.getElementById('fourStageRatings');
+            ratings.hidden = true;
+            ratings.querySelectorAll('button').forEach(button => { button.disabled = false; button.removeAttribute('aria-pressed'); });
+            return;
+        }
+        fourStageControls.hidden = true;
+        optionsBox.hidden = false;
         answers.forEach(answer => {
             const button = document.createElement('button');
             button.type = 'button';
@@ -2191,13 +2748,48 @@
     }
 
     let quizCurrentOptions = [];
+    function revealFourStageMeaning() {
+        if (!quizRecallMode || quizAnswered || !quizCurrent) return;
+        document.getElementById('fourStageMeaning').hidden = false;
+        document.getElementById('fourStageReveal').hidden = true;
+        document.getElementById('fourStageRatings').hidden = false;
+    }
+
+    function answerFourStageQuiz(rating) {
+        if (!quizRecallMode || quizAnswered || !quizCurrent) return;
+        quizAnswered = true;
+        const grade = normalizeSrsRating(rating);
+        quizRecallRatings[grade] = (quizRecallRatings[grade] || 0) + 1;
+        const status = recordSrsAnswer('vocab', quizCurrent, grade);
+        if (grade === 'AGAIN') {
+            const key = srsKey('vocab', quizCurrent);
+            if (!quizWrongItems.some(item => srsKey('vocab', item) === key)) quizWrongItems.push(quizCurrent);
+        }
+        document.querySelectorAll('#fourStageRatings button').forEach(button => {
+            button.disabled = true;
+            if (button.dataset.rating === grade) button.setAttribute('aria-pressed', 'true');
+        });
+        document.getElementById('quizFeedback').textContent = `${grade === 'AGAIN' ? '다시 복습할게요' : grade === 'HARD' ? '어려움으로 기록했어요' : grade === 'EASY' ? '쉬움으로 기록했어요' : '기억한 것으로 기록했어요'} · 다음 복습 간격 ${formatSrsInterval(status.intervalDays)}`;
+        document.getElementById('quizProgress').textContent = `문제 ${quizIndex + 1} / ${quizDeck.length} · 4단계 평가`;
+        const next = document.getElementById('quizNext');
+        next.textContent = quizIndex + 1 === quizDeck.length ? '결과 보기' : '다음 문제';
+        next.hidden = false;
+    }
+
+    document.querySelectorAll('#fourStageRatings button').forEach(button => {
+        button.addEventListener('click', () => answerFourStageQuiz(button.dataset.rating));
+    });
+
     function answerQuiz(answer, selectedButton) {
         if (quizAnswered || !quizCurrent) return;
         quizAnswered = true;
         const correct = answer === quizCurrent.sub;
         if (correct) quizScore++;
         recordSrsAnswer('vocab', quizCurrent, correct);
-        if (!correct) quizDeck.push(quizCurrent);
+        if (!correct) {
+            const key = srsKey('vocab', quizCurrent);
+            if (!quizWrongItems.some(item => srsKey('vocab', item) === key)) quizWrongItems.push(quizCurrent);
+        }
         document.querySelectorAll('#quizOptions .quiz-opt-btn').forEach(button => {
             button.disabled = true;
             if (button.textContent === quizCurrent.sub) button.classList.add('correct');
@@ -2215,6 +2807,10 @@
     function nextQuizQuestion() {
         if (!quizAnswered) return;
         quizIndex++;
+        if (!quizAllWordsMode && !quizRetryAdded && quizIndex >= quizPrimaryLength && quizWrongItems.length) {
+            quizRetryAdded = true;
+            quizDeck = quizDeck.slice(0, quizPrimaryLength).concat(buildBalancedQuizDeck(quizWrongItems));
+        }
         showQuizQuestion();
     }
 
@@ -2503,7 +3099,7 @@
             markAgain.addEventListener('click', () => { recordSrsAnswer('grammar', item, false); renderGrammarList(); });
             const speak = document.createElement("button");
             speak.type = "button"; speak.className = "tts-button"; speak.textContent = "🔊 발음";
-            speak.addEventListener("click", () => speakJapanese(item.expression));
+            speak.addEventListener("click", () => speakJapanese(item.expression, item.reading || ""));
             srsActions.append(speak, markKnown, markAgain);
             row.append(head, meaning, srsStatus, srsActions);
             list.appendChild(row);
